@@ -18,8 +18,18 @@ try:
 except Exception:
     GROQ_API_KEY = os.getenv("GROQ_API")
 
-# --- UI SETUP ---
+## --- UI SETUP ---
 st.set_page_config(page_title="UAE 55 Robot", page_icon="🤖", layout="centered")
+
+# --- HIDE THE STREAMLIT TOP BAR ---
+hide_streamlit_style = """
+            <style>
+            #MainMenu {visibility: hidden;}
+            header {visibility: hidden;}
+            footer {visibility: hidden;}
+            </style>
+            """
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
 # Custom CSS for a friendly, UAE-themed UI
 st.markdown("""
@@ -30,6 +40,8 @@ st.markdown("""
     .qr-text { text-align: center; font-size: 14px; color: #555; margin-bottom: 30px;}
     </style>
 """, unsafe_allow_html=True)
+
+
 
 # Header
 st.markdown("<h1>🤖 صديق اليوم الوطني 55 | National Day 55 Buddy</h1>", unsafe_allow_html=True)
