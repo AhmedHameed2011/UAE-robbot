@@ -7,9 +7,16 @@ import os
 from groq import Groq
 from dotenv import load_dotenv
 
-# Load API Key
+# Load local .env file (for testing on your laptop)
 load_dotenv()
-GROQ_API_KEY = os.getenv("GROQ_API")
+
+# --- API KEY SETUP ---
+# This tries to get the key from Streamlit Cloud Secrets first. 
+# If it fails (because you are running locally), it looks in the .env file.
+try:
+    GROQ_API_KEY = st.secrets["GROQ_API"]
+except Exception:
+    GROQ_API_KEY = os.getenv("GROQ_API")
 
 # --- UI SETUP ---
 st.set_page_config(page_title="UAE 55 Robot", page_icon="🤖", layout="centered")
@@ -19,27 +26,40 @@ st.markdown("""
     <style>
     .stApp { background-color: #f4f7f6; }
     h1 { color: #006400; text-align: center; font-family: 'Arial', sans-serif; }
-    .stButton>button { background-color: #FF0000; color: white; border-radius: 15px; font-weight: bold; }
-    .robot-text { text-align: center; font-size: 20px; color: #333; }
+    .robot-text { text-align: center; font-size: 20px; color: #333; margin-top: 20px;}
+    .qr-text { text-align: center; font-size: 14px; color: #555; margin-bottom: 30px;}
     </style>
 """, unsafe_allow_html=True)
 
 # Header
 st.markdown("<h1>🤖 صديق اليوم الوطني 55 | National Day 55 Buddy</h1>", unsafe_allow_html=True)
-st.markdown("<p class='robot-text'>مرحباً بك! اضغط على المايك وتحدث بالعربية أو الإنجليزية.<br>Welcome! Press the mic and speak in Arabic or English.</p>", unsafe_allow_html=True)
 
-# You can replace this with a real image of a robot later
-# st.image("robot_avatar.png", width=150)
+# --- QR CODE SECTION ---
+# Uses columns to center the QR code nicely
+col1, col2, col3 = st.columns([1, 1, 1])
+
+with col2:
+    try:
+        # Display the QR code. Ensure 'qr_code.png' is in the same folder!
+        st.image("qr_code.png", use_container_width=True)
+        st.markdown(
+            "<p class='qr-text'>📱 Scan to try on your phone!<br>امسح الرمز للتجربة على هاتفك!</p>", 
+            unsafe_allow_html=True
+        )
+    except Exception:
+        st.warning("QR Code image not found. Please ensure 'qr_code.png' is in the folder.")
+
+# --- INSTRUCTIONS ---
+st.markdown("<p class='robot-text'>مرحباً بك! اضغط على المايك وتحدث بالعربية أو الإنجليزية.<br>Welcome! Press the mic and speak in Arabic or English.</p>", unsafe_allow_html=True)
 
 # --- INITIALIZE GROQ ---
 if not GROQ_API_KEY:
-    st.error("API Key not found. Please check your .env file.")
+    st.error("API Key not found. Please check your Streamlit Secrets or .env file.")
     st.stop()
     
 client = Groq(api_key=GROQ_API_KEY)
 
 # --- ROBOT'S PERSONALITY (SYSTEM PROMPT) ---
-# YOU CAN EDIT THIS to add your school's name and specific facts!
 SYSTEM_PROMPT = """
 You are a friendly, intelligent robot at a school exhibition for the UAE 55th National Day.
 Your job is to answer parents' questions.
@@ -50,7 +70,7 @@ You MUST follow these rules strictly:
 4. Remember these facts:
    - The UAE 55th National Day is on December 2nd, 2026.
    - This exhibition showcases student projects in Artificial Intelligence.
-   - You are built using Python and AI by a brilliant student.
+   - You are built using Python and AI by a brilliant students.
 """
 
 # --- HELPER FUNCTIONS ---
@@ -84,13 +104,13 @@ def transcribe_audio(audio_bytes):
     return text, lang
 
 def get_ai_response(user_text):
-    """Sends text to Groq Llama 3 and gets a response."""
+    """Sends text to Groq and gets a response."""
     completion = client.chat.completions.create(
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_text}
         ],
-        model="openai/gpt-oss-20b",  # <--- 改这里
+        model="openai/gpt-oss-20b", # The updated Groq model
         temperature=0.6,
         max_tokens=150,
     )
