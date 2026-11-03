@@ -1,4 +1,5 @@
 streamlit
+audio-recorder-streamlit
 edge-tts
 groq
 python-dotenv

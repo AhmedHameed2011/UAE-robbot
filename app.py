@@ -4,6 +4,7 @@ import asyncio
 import os
 from groq import Groq
 from dotenv import load_dotenv
+from audio_recorder_streamlit import audio_recorder # <--- إعادة استيراد المكتبة
 
 # Load local .env file
 load_dotenv()
@@ -36,6 +37,14 @@ st.markdown("""
     }
     .arabic-text { text-align: center; font-size: 24px; color: #333; direction: rtl; font-family: 'Tahoma', sans-serif; margin-bottom: 5px; font-weight: bold;}
     .english-text { text-align: center; font-size: 18px; color: #666; margin-bottom: 20px; }
+    
+    /* --- Make the microphone bigger and add a glow --- */
+    div[data-testid="stAudioRecorder"] button {
+        transform: scale(1.8);
+        margin: 30px 0px;
+        box-shadow: 0 0 20px rgba(0, 115, 47, 0.4);
+        border: 2px solid #00732f;
+    }
 
     /* --- ANIMATION FOR THINKING --- */
     @keyframes pulse {
@@ -147,11 +156,16 @@ st.write("---")
 st.markdown("<p class='arabic-text'>👇 اضغط على المايكروفون وتحدث مع زايد</p>", unsafe_allow_html=True)
 st.markdown("<p class='english-text'>👇 Press the microphone and talk to Zayed</p>", unsafe_allow_html=True)
 
-# استخدام st.audio_input المدمج بدلاً من المكتبة الخارجية
-col_mic1, col_mic2, col_mic3 = st.columns([1, 2, 1])
+col_mic1, col_mic2, col_mic3 = st.columns([1, 1, 1])
 with col_mic2:
-    audio_file = st.audio_input("اضغط للتحدث مع زايد / Press to talk to Zayed")
-    audio_bytes = audio_file.read() if audio_file else None
+    # إعادة الزر الكبير
+    audio_bytes = audio_recorder(
+        text="",
+        recording_color="#ff0000",
+        neutral_color="#00732f",
+        icon_name="microphone",
+        icon_size="3x",
+    )
 
 # --- WAKE WORD & RESPONSE LOGIC ---
 if audio_bytes:
@@ -186,14 +200,12 @@ if audio_bytes:
                 speak_placeholder.empty()
                 
             else:
-                # التفكير والبث
                 think_placeholder = st.empty()
                 think_placeholder.markdown("<div class='thinking-animation'>🧠 زايد يفكر... / Zayed is thinking...</div>", unsafe_allow_html=True)
                 
                 response_text = st.write_stream(get_ai_response_stream(prompt_for_ai))
                 think_placeholder.empty()
                 
-                # التحدث
                 speak_placeholder = st.empty()
                 speak_placeholder.markdown("<div class='thinking-animation'>🔊 زايد يتحدث... / Zayed is speaking...</div>", unsafe_allow_html=True)
                 
