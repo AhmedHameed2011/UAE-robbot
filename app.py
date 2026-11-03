@@ -4,6 +4,7 @@ import asyncio
 import os
 from groq import Groq
 from dotenv import load_dotenv
+from audio_recorder_streamlit import audio_recorder
 
 # Load local .env file
 load_dotenv()
@@ -37,16 +38,28 @@ st.markdown("""
     .arabic-text { text-align: center; font-size: 24px; color: #333; direction: rtl; font-family: 'Tahoma', sans-serif; margin-bottom: 5px; font-weight: bold;}
     .english-text { text-align: center; font-size: 18px; color: #666; margin-bottom: 20px; }
     
-    /* تنسيق مخصص لمربع كلام الروبوت */
-    .robot-bubble {
-        background-color: #e8f5e9; /* لون أخضر فاتح */
-        color: #1b5e20;
-        padding: 15px 20px;
-        border-radius: 15px;
-        border-left: 5px solid #00732f;
-        margin: 15px 0;
-        font-size: 18px;
-        direction: rtl; /* لدعم اللغة العربية */
+    /* --- CUSTOM ROUND MIC BUTTON WITH YOUR IMAGE --- */
+    /* 1. Hide the default black box and text */
+    div[data-testid="stAudioRecorder"] > div {
+        display: none;
+    }
+    /* 2. Style the underlying button to be a perfect circle with your image */
+    div[data-testid="stAudioRecorder"] button {
+        display: block !important;
+        width: 120px !important;
+        height: 120px !important;
+        border-radius: 50% !important;
+        background-image: url("https://raw.githubusercontent.com/AhmedHameed2011/UAE-robot/main/mic_icon.png") !important; /* تأكد من رفع الصورة بهذا الاسم إلى GitHub */
+        background-size: cover !important;
+        background-position: center !important;
+        border: 4px solid #00732f !important; /* إطار أخضر */
+        box-shadow: 0 4px 15px rgba(0, 115, 47, 0.5) !important;
+        margin: 0 auto !important;
+        transition: transform 0.2s !important;
+    }
+    /* 3. Add a hover effect */
+    div[data-testid="stAudioRecorder"] button:hover {
+        transform: scale(1.05) !important;
     }
     
     header {visibility: hidden;} footer {visibility: hidden;} #MainMenu {visibility: hidden;}
@@ -114,8 +127,8 @@ def transcribe_audio_groq(audio_bytes):
         lang = "en"
     return text, lang
 
-def get_ai_response(user_text):
-    completion = client.chat.completions.create(
+def get_ai_response_stream(user_text):
+    stream = client.chat.completions.create(
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_text}
@@ -123,8 +136,11 @@ def get_ai_response(user_text):
         model="openai/gpt-oss-20b",
         temperature=0.6,
         max_tokens=150,
+        stream=True,
     )
-    return completion.choices[0].message.content
+    for chunk in stream:
+        if chunk.choices[0].delta.content:
+            yield chunk.choices[0].delta.content
 
 async def generate_tts(text, lang):
     if lang == "ar":
@@ -139,31 +155,47 @@ async def generate_tts(text, lang):
 # --- MAIN APP LOGIC ---
 st.write("---") 
 
-st.markdown("<p class='arabic-text'>👇 اضغط على زر التسجيل واطرح سؤالك</p>", unsafe_allow_html=True)
-st.markdown("<p class='english-text'>👇 Click the record button and ask your question</p>", unsafe_allow_html=True)
+st.markdown("<p class='arabic-text'>👇 اضغط على المايكروفون و تكلم مع زايد</p>", unsafe_allow_html=True)
+st.markdown("<p class='english-text'>👇 Press the microphone and ask your question</p>", unsafe_allow_html=True)
 
-# استخدام st.audio_input المدمج والموثوق
-audio_file = st.audio_input("سجل صوتك هنا / Record your voice here")
+col_mic1, col_mic2, col_mic3 = st.columns([1, 1, 1])
+with col_mic2:
+    # لاحظ أننا أبقينا النص فارغاً لأننا نخفي الصندوق الأسود بالـ CSS
+    audio_bytes = audio_recorder(
+        text="",
+        recording_color="#ff0000",
+        neutral_color="#00732f",
+        icon_name="microphone",
+        icon_size="3x",
+    )
 
-if audio_file:
-    audio_bytes = audio_file.read()
-    
+# --- RESPONSE LOGIC ---
+if audio_bytes:
     with st.spinner("Listening... / جاري الاستماع..."):
         user_text, detected_lang = transcribe_audio_groq(audio_bytes)
     
     if user_text:
         st.success(f"**You said / قلت:** {user_text}")
         
-        with st.spinner("Thinking... / جاري التفكير..."):
-            ai_response = get_ai_response(user_text)
-            
-            # عرض كلام الروبوت في مربع واضح
-            st.markdown(f"<div class='robot-bubble'>🤖 <b>زايد:</b> {ai_response}</div>", unsafe_allow_html=True)
+        user_text_lower = user_text.lower().strip()
+        wake_words = ["zayed", "زايد"]
         
-        with st.spinner("Speaking... / جاري التحدث..."):
-            audio_out_file = asyncio.run(generate_tts(ai_response, detected_lang))
-            with open(audio_out_file, "rb") as f:
-                st.audio(f.read(), format="audio/mp3", autoplay=True)
-            os.remove(audio_out_file)
+        if user_text_lower in wake_words:
+            ai_response = "نعم؟ كيف يمكنني مساعدتك اليوم؟" if detected_lang == "ar" else "Yes? How can I help you today?"
+            st.info(f"**🤖 Zayed:** {ai_response}")
+            with st.spinner("Speaking..."):
+                audio_file = asyncio.run(generate_tts(ai_response, detected_lang))
+                with open(audio_file, "rb") as f:
+                    st.audio(f.read(), format="audio/mp3", autoplay=True)
+                os.remove(audio_file)
+        else:
+            with st.spinner("Thinking... / جاري التفكير..."):
+                response_text = st.write_stream(get_ai_response_stream(user_text))
+            
+            with st.spinner("Speaking... / جاري التحدث..."):
+                audio_file = asyncio.run(generate_tts(response_text, detected_lang))
+                with open(audio_file, "rb") as f:
+                    st.audio(f.read(), format="audio/mp3", autoplay=True)
+                os.remove(audio_file)
     else:
         st.error("Sorry, I couldn't understand. Please try again. / عذراً، لم أفهم. حاول مرة أخرى.")
