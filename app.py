@@ -11,58 +11,98 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # --- API KEY SETUP ---
-# This tries to get the key from Streamlit Cloud Secrets first. 
-# If it fails (because you are running locally), it looks in the .env file.
 try:
     GROQ_API_KEY = st.secrets["GROQ_API"]
 except Exception:
     GROQ_API_KEY = os.getenv("GROQ_API")
 
-## --- UI SETUP ---
-st.set_page_config(page_title="UAE 55 Robot", page_icon="🤖", layout="centered")
+# --- UI SETUP ---
+st.set_page_config(page_title="UAE 55 Robot", page_icon="🇦🇪", layout="centered")
 
-# --- HIDE THE STREAMLIT TOP BAR ---
-hide_streamlit_style = """
-            <style>
-            #MainMenu {visibility: hidden;}
-            header {visibility: hidden;}
-            footer {visibility: hidden;}
-            </style>
-            """
-st.markdown(hide_streamlit_style, unsafe_allow_html=True)
-
-# Custom CSS for a friendly, UAE-themed UI
+# --- CUSTOM CSS FOR EXHIBITION KIOSK ---
 st.markdown("""
     <style>
-    .stApp { background-color: #f4f7f6; }
-    h1 { color: #006400; text-align: center; font-family: 'Arial', sans-serif; }
-    .robot-text { text-align: center; font-size: 20px; color: #333; margin-top: 20px;}
-    .qr-text { text-align: center; font-size: 14px; color: #555; margin-bottom: 30px;}
+    /* Main background */
+    .stApp { 
+        background-color: #f8f9fa; 
+    }
+    
+    /* UAE Flag Top Border */
+    .uae-border {
+        height: 10px;
+        background: linear-gradient(to right, #00732f 33%, #ffffff 33%, #ffffff 66%, #000000 66%);
+        border-top: 5px solid #ff0000;
+        margin-bottom: 30px;
+        border-radius: 5px;
+    }
+
+    /* Title Styling */
+    h1 { 
+        color: #00732f; 
+        text-align: center; 
+        font-family: 'Arial', sans-serif; 
+        font-weight: bold;
+    }
+    
+    /* The "Card" for QR Code */
+    .qr-card {
+        background-color: white;
+        padding: 20px;
+        border-radius: 15px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        text-align: center;
+        margin: 20px auto;
+        max-width: 300px;
+    }
+
+    /* Bilingual Text Styling */
+    .arabic-text { 
+        text-align: center; 
+        font-size: 22px; 
+        color: #333; 
+        direction: rtl; 
+        font-family: 'Tahoma', sans-serif;
+        margin-bottom: 5px;
+    }
+    .english-text { 
+        text-align: center; 
+        font-size: 18px; 
+        color: #666; 
+        margin-bottom: 20px;
+    }
+    
+    /* Hide standard Streamlit header/footer */
+    header {visibility: hidden;}
+    footer {visibility: hidden;}
+    #MainMenu {visibility: hidden;}
     </style>
 """, unsafe_allow_html=True)
 
-
+# --- RENDER UI ---
+# UAE Flag Border
+st.markdown("<div class='uae-border'></div>", unsafe_allow_html=True)
 
 # Header
-st.markdown("<h1>🤖 صديق اليوم الوطني 55 | National Day 55 Buddy</h1>", unsafe_allow_html=True)
+st.markdown("<h1>🤖 صديق اليوم الوطني 55</h1>", unsafe_allow_html=True)
+st.markdown("<h2 style='text-align: center; color: #333;'>National Day 55 Buddy</h2>", unsafe_allow_html=True)
 
-# --- QR CODE SECTION ---
-# Uses columns to center the QR code nicely
+# QR Code & Instructions Card
+st.markdown("""
+    <div class='qr-card'>
+        <p style='font-size: 16px; font-weight: bold; color: #00732f;'>📱 Scan to try on your phone</p>
+    </div>
+""", unsafe_allow_html=True)
+
 col1, col2, col3 = st.columns([1, 1, 1])
-
 with col2:
     try:
-        # Display the QR code. Ensure 'qr_code.png' is in the same folder!
         st.image("qr_code.png", use_container_width=True)
-        st.markdown(
-            "<p class='qr-text'>📱 Scan to try on your phone!<br>امسح الرمز للتجربة على هاتفك!</p>", 
-            unsafe_allow_html=True
-        )
     except Exception:
         st.warning("QR Code image not found. Please ensure 'qr_code.png' is in the folder.")
 
-# --- INSTRUCTIONS ---
-st.markdown("<p class='robot-text'>مرحباً بك! اضغط على المايك وتحدث بالعربية أو الإنجليزية.<br>Welcome! Press the mic and speak in Arabic or English.</p>", unsafe_allow_html=True)
+# Instructions (Bilingual)
+st.markdown("<p class='arabic-text'>مرحباً بك! اضغط على المايك وتحدث بالعربية أو الإنجليزية.</p>", unsafe_allow_html=True)
+st.markdown("<p class='english-text'>Welcome! Press the mic and speak in Arabic or English.</p>", unsafe_allow_html=True)
 
 # --- INITIALIZE GROQ ---
 if not GROQ_API_KEY:
@@ -71,7 +111,7 @@ if not GROQ_API_KEY:
     
 client = Groq(api_key=GROQ_API_KEY)
 
-# --- ROBOT'S PERSONALITY (SYSTEM PROMPT) ---
+# --- ROBOT'S PERSONALITY ---
 SYSTEM_PROMPT = """
 You are a friendly, intelligent robot at a school exhibition for the UAE 55th National Day.
 Your job is to answer parents' questions.
@@ -86,37 +126,28 @@ You MUST follow these rules strictly:
 """
 
 # --- HELPER FUNCTIONS ---
-
 def transcribe_audio(audio_bytes):
-    """Converts speech to text, trying Arabic first, then English."""
     r = sr.Recognizer()
     temp_file = "temp_audio.wav"
-    
     with open(temp_file, "wb") as f:
         f.write(audio_bytes)
-    
     with sr.AudioFile(temp_file) as source:
         audio_data = r.record(source)
-        
     try:
-        # Try Arabic first
         text = r.recognize_google(audio_data, language="ar-AE")
         lang = "ar"
     except sr.UnknownValueError:
         try:
-            # Fallback to English
             text = r.recognize_google(audio_data, language="en-US")
             lang = "en"
         except:
             text = None
             lang = "en"
-            
     if os.path.exists(temp_file):
         os.remove(temp_file)
     return text, lang
 
 def get_ai_response(user_text):
-    """Sends text to Groq and gets a response."""
     completion = client.chat.completions.create(
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
@@ -124,62 +155,53 @@ def get_ai_response(user_text):
         ],
         model="openai/gpt-oss-20b",
         temperature=0.6,
-        max_tokens=300, # <--- Increased from 150 to 300 for longer speech
+        max_tokens=300,
     )
     return completion.choices[0].message.content
 
-
 async def generate_tts(text, lang):
-    """Generates an MP3 file using Microsoft Edge TTS."""
     if lang == "ar":
         voice = "ar-AE-FatimaNeural" 
     else:
         voice = "en-US-AriaNeural"   
-        
     output_file = "response_audio.mp3"
-    
-    # --- NEW: Add volume and rate control here ---
-    # volume can be up to "+100%", rate can be adjusted (e.g., "+10%")
+    # Increased volume and rate
     communicate = edge_tts.Communicate(text, voice, volume="+100%", rate="+10%")
-    
     await communicate.save(output_file)
     return output_file
 
 # --- MAIN APP LOGIC ---
+st.write("---") # Visual separator
 
-# The Audio Recorder Widget
-audio_bytes = audio_recorder(
-    text="Press to speak / اضغط للتحدث",
-    recording_color="#FF0000",
-    neutral_color="#006400",
-    icon_name="microphone",
-    icon_size="3x",
-)
+# Center the Audio Recorder
+col_mic1, col_mic2, col_mic3 = st.columns([1, 1, 1])
+with col_mic2:
+    audio_bytes = audio_recorder(
+        text="Click to Speak | اضغط للتحدث",
+        recording_color="#ff0000",
+        neutral_color="#00732f",
+        icon_name="microphone",
+        icon_size="3x",
+    )
 
 if audio_bytes:
     st.info("Processing... / جاري المعالجة...")
-    
-    # Step 1: Listen
     user_text, detected_lang = transcribe_audio(audio_bytes)
     
     if user_text:
+        # Display what the user said in a nice box
         st.success(f"**You said / قلت:** {user_text}")
         
-        # Step 2: Think
         with st.spinner("Thinking... / جاري التفكير..."):
             ai_response = get_ai_response(user_text)
-            st.info(f"**Robot:** {ai_response}")
+            # Display AI response in a chat bubble style
+            st.info(f"**🤖 Robot:** {ai_response}")
             
-        # Step 3: Speak
         with st.spinner("Speaking... / جاري التحدث..."):
             audio_file = asyncio.run(generate_tts(ai_response, detected_lang))
-            
-            # Play the audio automatically
             with open(audio_file, "rb") as f:
                 audio_data = f.read()
                 st.audio(audio_data, format="audio/mp3", autoplay=True)
-            
-            # Clean up the file
             if os.path.exists(audio_file):
                 os.remove(audio_file)
     else:
