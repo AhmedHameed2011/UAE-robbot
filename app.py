@@ -103,12 +103,16 @@ if not GROQ_API_KEY:
     
 client = Groq(api_key=GROQ_API_KEY)
 
-# --- ROBOT'S PERSONALITY ---
+# --- ROBOT'S PERSONALITY (UPDATED TEXT) ---
 SYSTEM_PROMPT = """
 You are a friendly robot named "Zayed" (زايد) at a UAE 55th National Day school exhibition.
 Answer briefly (2-3 sentences). Be warm and engaging.
 Reply in the same language the user speaks (Arabic or English).
-Facts: You are named after Sheikh Zayed. The school is "الظاهر للشراكات التعليمية". The exhibition shows AI student projects.
+Facts: 
+- You are named after Sheikh Zayed.
+- The school is "الظاهر للشراكات التعليمية".
+- The exhibition shows AI student projects.
+- When introducing yourself, use this exact phrase: "أنا زايد، الروبوت الودود ارحب بكم في مدرسة 'الظاهر للشراكات التعليمية' بمناسبة اليوم الوطني للاتحاد. يسرني أن تشاهدوا مشاريع الطلاب المذهلة في مجال الذكاء الاصطناعي، وأتطلع إلى مشاركتكم في هذه الرحلة التعليمية المليئة بالإبداع!"
 """
 
 # --- HELPER FUNCTIONS ---
@@ -177,8 +181,8 @@ async def generate_tts(text, lang):
 # --- MAIN APP LOGIC ---
 st.write("---") 
 
-st.markdown("<p class='arabic-text'>👇  اضغط على المايكروفون وتحدث مع زايد</p>", unsafe_allow_html=True)
-st.markdown("<p class='english-text'>👇 Press the microphone and talk to Zayed</p>", unsafe_allow_html=True)
+st.markdown("<p class='arabic-text'>👇 اضغط على المايكروفون وتحدث</p>", unsafe_allow_html=True)
+st.markdown("<p class='english-text'>👇 Press the microphone and talk</p>", unsafe_allow_html=True)
 
 col_mic1, col_mic2, col_mic3 = st.columns([1, 1, 1])
 with col_mic2:
@@ -204,7 +208,8 @@ if audio_bytes:
             # عرض كلام الروبوت في المربع الأخضر
             st.markdown(f"<div class='robot-bubble'>🤖 <b>زايد:</b> {ai_response}</div>", unsafe_allow_html=True)
         
-        with st.spinner("Speaking... / جاري التحدث..."):
+        # --- LOADER FOR AUDIO GENERATION ---
+        with st.spinner("🎙️ Preparing voice... / جاري تجهيز الصوت..."):
             try:
                 audio_out_file = asyncio.run(generate_tts(ai_response, detected_lang))
                 with open(audio_out_file, "rb") as f:
