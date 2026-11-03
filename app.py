@@ -38,29 +38,6 @@ st.markdown("""
     .arabic-text { text-align: center; font-size: 24px; color: #333; direction: rtl; font-family: 'Tahoma', sans-serif; margin-bottom: 5px; font-weight: bold;}
     .english-text { text-align: center; font-size: 18px; color: #666; margin-bottom: 20px; }
     
-    /* تصميم الزر الدائري الكبير */
-    div[data-testid="stAudioRecorder"] button {
-        background-color: #00732f !important;
-        color: white !important;
-        width: 120px !important;
-        height: 120px !important;
-        border-radius: 50% !important;
-        box-shadow: 0 0 20px rgba(0, 115, 47, 0.6) !important;
-        border: 4px solid #ffffff !important;
-        margin: 20px auto !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        transition: transform 0.2s !important;
-    }
-    div[data-testid="stAudioRecorder"] button:hover {
-        transform: scale(1.1) !important;
-    }
-    /* إخفاء النص والصندوق الأسود الافتراضي */
-    div[data-testid="stAudioRecorder"] > div > div {
-        display: none !important;
-    }
-
     /* مربع كلام الروبوت */
     .robot-bubble {
         background-color: #e8f5e9;
@@ -74,6 +51,7 @@ st.markdown("""
         box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
     
+    /* إخفاء الشريط العلوي والسفلي فقط */
     header {visibility: hidden;} footer {visibility: hidden;} #MainMenu {visibility: hidden;}
     </style>
 """, unsafe_allow_html=True)
@@ -103,7 +81,7 @@ if not GROQ_API_KEY:
     
 client = Groq(api_key=GROQ_API_KEY)
 
-# --- ROBOT'S PERSONALITY (UPDATED TEXT) ---
+# --- ROBOT'S PERSONALITY ---
 SYSTEM_PROMPT = """
 You are a friendly robot named "Zayed" (زايد) at a UAE 55th National Day school exhibition.
 Answer briefly (2-3 sentences). Be warm and engaging.
@@ -162,7 +140,6 @@ async def generate_tts(text, lang):
         voice = "en-US-GuyNeural"    
     output_file = "response_audio.mp3"
     
-    # إعادة المحاولة حتى 3 مرات في حال فشل الخدمة
     max_retries = 3
     for attempt in range(max_retries):
         try:
@@ -186,6 +163,7 @@ st.markdown("<p class='english-text'>👇 Press the microphone and talk</p>", un
 
 col_mic1, col_mic2, col_mic3 = st.columns([1, 1, 1])
 with col_mic2:
+    # الزر الافتراضي (مربع داكن) - يعمل بشكل موثوق
     audio_bytes = audio_recorder(
         text="", 
         recording_color="#ff0000",
@@ -205,10 +183,8 @@ if audio_bytes:
         with st.spinner("Thinking... / جاري التفكير..."):
             ai_response = get_ai_response(user_text)
             
-            # عرض كلام الروبوت في المربع الأخضر
             st.markdown(f"<div class='robot-bubble'>🤖 <b>زايد:</b> {ai_response}</div>", unsafe_allow_html=True)
         
-        # --- LOADER FOR AUDIO GENERATION ---
         with st.spinner("🎙️ Preparing voice... / جاري تجهيز الصوت..."):
             try:
                 audio_out_file = asyncio.run(generate_tts(ai_response, detected_lang))
