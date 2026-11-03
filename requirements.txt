@@ -1,8 +1,4 @@
 streamlit
-audio-recorder-streamlit
-SpeechRecognition
 edge-tts
 groq
 python-dotenv
-pydub
-audio-recorder-streamlit

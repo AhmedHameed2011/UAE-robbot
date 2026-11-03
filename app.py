@@ -36,14 +36,6 @@ st.markdown("""
     }
     .arabic-text { text-align: center; font-size: 24px; color: #333; direction: rtl; font-family: 'Tahoma', sans-serif; margin-bottom: 5px; font-weight: bold;}
     .english-text { text-align: center; font-size: 18px; color: #666; margin-bottom: 20px; }
-    
-    /* --- Make the microphone bigger and add a glow --- */
-    div[data-testid="stAudioRecorder"] button {
-        transform: scale(1.8);
-        margin: 30px 0px;
-        box-shadow: 0 0 20px rgba(0, 115, 47, 0.4);
-        border: 2px solid #00732f;
-    }
 
     /* --- ANIMATION FOR THINKING --- */
     @keyframes pulse {
@@ -155,24 +147,19 @@ st.write("---")
 st.markdown("<p class='arabic-text'>👇 اضغط على المايكروفون وتحدث مع زايد</p>", unsafe_allow_html=True)
 st.markdown("<p class='english-text'>👇 Press the microphone and talk to Zayed</p>", unsafe_allow_html=True)
 
-col_mic1, col_mic2, col_mic3 = st.columns([1, 1, 1])
+# استخدام st.audio_input المدمج بدلاً من المكتبة الخارجية
+col_mic1, col_mic2, col_mic3 = st.columns([1, 2, 1])
 with col_mic2:
-    audio_bytes = audio_recorder(
-        text="",
-        recording_color="#ff0000",
-        neutral_color="#00732f",
-        icon_name="microphone",
-        icon_size="3x",
-    )
+    audio_file = st.audio_input("اضغط للتحدث مع زايد / Press to talk to Zayed")
+    audio_bytes = audio_file.read() if audio_file else None
 
 # --- WAKE WORD & RESPONSE LOGIC ---
 if audio_bytes:
-    # استخدام رسالة استماع متحركة بدلاً من spinner العادي
     listen_placeholder = st.empty()
     listen_placeholder.markdown("<div class='thinking-animation'>🎤 زايد يستمع إليك... / Zayed is listening...</div>", unsafe_allow_html=True)
     
     user_text, detected_lang = transcribe_audio_groq(audio_bytes)
-    listen_placeholder.empty() # إزالة الرسالة بعد الانتهاء
+    listen_placeholder.empty() 
     
     if user_text:
         st.success(f"**You said / قلت:** {user_text}")
@@ -192,10 +179,10 @@ if audio_bytes:
                 speak_placeholder = st.empty()
                 speak_placeholder.markdown("<div class='thinking-animation'>🔊 زايد يتحدث... / Zayed is speaking...</div>", unsafe_allow_html=True)
                 
-                audio_file = asyncio.run(generate_tts(ai_response, detected_lang))
-                with open(audio_file, "rb") as f:
+                audio_out_file = asyncio.run(generate_tts(ai_response, detected_lang))
+                with open(audio_out_file, "rb") as f:
                     st.audio(f.read(), format="audio/mp3", autoplay=True)
-                os.remove(audio_file)
+                os.remove(audio_out_file)
                 speak_placeholder.empty()
                 
             else:
@@ -204,16 +191,16 @@ if audio_bytes:
                 think_placeholder.markdown("<div class='thinking-animation'>🧠 زايد يفكر... / Zayed is thinking...</div>", unsafe_allow_html=True)
                 
                 response_text = st.write_stream(get_ai_response_stream(prompt_for_ai))
-                think_placeholder.empty() # إزالة رسالة التفكير بعد ظهور النص
+                think_placeholder.empty()
                 
                 # التحدث
                 speak_placeholder = st.empty()
                 speak_placeholder.markdown("<div class='thinking-animation'>🔊 زايد يتحدث... / Zayed is speaking...</div>", unsafe_allow_html=True)
                 
-                audio_file = asyncio.run(generate_tts(response_text, detected_lang))
-                with open(audio_file, "rb") as f:
+                audio_out_file = asyncio.run(generate_tts(response_text, detected_lang))
+                with open(audio_out_file, "rb") as f:
                     st.audio(f.read(), format="audio/mp3", autoplay=True)
-                os.remove(audio_file)
+                os.remove(audio_out_file)
                 speak_placeholder.empty()
         else:
             st.warning("I am sleeping. You must call my name first! / أنا نائم. يجب أن تنادي باسمي أولاً! (قل: زايد)")
