@@ -1,6 +1,4 @@
 import streamlit as st
-import speech_recognition as sr
-from audio_recorder_streamlit import audio_recorder
 import edge_tts
 import asyncio
 import os
@@ -39,12 +37,26 @@ st.markdown("""
     .arabic-text { text-align: center; font-size: 24px; color: #333; direction: rtl; font-family: 'Tahoma', sans-serif; margin-bottom: 5px; font-weight: bold;}
     .english-text { text-align: center; font-size: 18px; color: #666; margin-bottom: 20px; }
     
-    /* --- NEW: Make the microphone bigger and add a glow --- */
+    /* --- Make the microphone bigger and add a glow --- */
     div[data-testid="stAudioRecorder"] button {
-        transform: scale(1.8); /* Makes the button 1.8x larger */
-        margin: 30px 0px;      /* Adds space around the button */
-        box-shadow: 0 0 20px rgba(0, 115, 47, 0.4); /* Green glow */
+        transform: scale(1.8);
+        margin: 30px 0px;
+        box-shadow: 0 0 20px rgba(0, 115, 47, 0.4);
         border: 2px solid #00732f;
+    }
+
+    /* --- ANIMATION FOR THINKING --- */
+    @keyframes pulse {
+        0% { opacity: 0.6; }
+        50% { opacity: 1; }
+        100% { opacity: 0.6; }
+    }
+    .thinking-animation {
+        text-align: center;
+        font-size: 20px;
+        color: #00732f;
+        animation: pulse 1.5s infinite;
+        margin-top: 20px;
     }
     
     header {visibility: hidden;} footer {visibility: hidden;} #MainMenu {visibility: hidden;}
@@ -78,53 +90,54 @@ client = Groq(api_key=GROQ_API_KEY)
 
 # --- ROBOT'S PERSONALITY ---
 SYSTEM_PROMPT = """
-You are a friendly, intelligent robot named "Zayed" (زايد). You are at a school exhibition for the UAE 55th National Day.
-Your job is to answer parents' questions.
-You MUST follow these rules strictly:
-1. If the user speaks Arabic, reply in Arabic.
-2. If the user speaks English, reply in English.
-3. Provide a detailed, warm, and engaging answer (about 3 to 4 sentences). Elaborate on the facts to make it interesting for the parents.
-4. Remember these facts:
-   - Your name is Zayed. You are named in honor of the late Sheikh Zayed bin Sultan Al Nahyan, the founding father of the UAE.
-   - The school hosting this exhibition is "الظاهر للشراكات التعليمية" (Al Dhahir for Educational Partnerships).
-   - The UAE 55th National Day is on December 2nd, 2026.
-   - This exhibition showcases student projects in Artificial Intelligence.
-   - You are built using Python and AI by a brilliant student from this school.
+You are a friendly robot named "Zayed" (زايد) at a UAE 55th National Day school exhibition.
+Answer briefly (2-3 sentences). Be warm and engaging.
+Reply in the same language the user speaks (Arabic or English).
+Facts: You are named after Sheikh Zayed. The school is "الظاهر للشراكات التعليمية". The exhibition shows AI student projects.
 """
 
 # --- HELPER FUNCTIONS ---
-def transcribe_audio(audio_bytes):
-    r = sr.Recognizer()
+
+def transcribe_audio_groq(audio_bytes):
     temp_file = "temp_audio.wav"
     with open(temp_file, "wb") as f:
         f.write(audio_bytes)
-    with sr.AudioFile(temp_file) as source:
-        audio_data = r.record(source)
     try:
-        text = r.recognize_google(audio_data, language="ar-AE")
-        lang = "ar"
-    except sr.UnknownValueError:
-        try:
-            text = r.recognize_google(audio_data, language="en-US")
-            lang = "en"
-        except:
-            text = None
-            lang = "en"
-    if os.path.exists(temp_file):
-        os.remove(temp_file)
+        with open(temp_file, "rb") as file:
+            transcription = client.audio.transcriptions.create(
+                file=(temp_file, file.read()),
+                model="whisper-large-v3-turbo",
+                response_format="text",
+                language=None
+            )
+        text = transcription.strip() if isinstance(transcription, str) else transcription.text.strip()
+    except Exception as e:
+        print(f"Groq transcription error: {e}")
+        text = None
+    finally:
+        if os.path.exists(temp_file):
+            os.remove(temp_file)
+    
+    if text:
+        lang = "ar" if any('\u0600' <= c <= '\u06FF' for c in text) else "en"
+    else:
+        lang = "en"
     return text, lang
 
-def get_ai_response(user_text):
-    completion = client.chat.completions.create(
+def get_ai_response_stream(user_text):
+    stream = client.chat.completions.create(
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_text}
         ],
         model="openai/gpt-oss-20b",
         temperature=0.6,
-        max_tokens=300,
+        max_tokens=150,
+        stream=True,
     )
-    return completion.choices[0].message.content
+    for chunk in stream:
+        if chunk.choices[0].delta.content:
+            yield chunk.choices[0].delta.content
 
 async def generate_tts(text, lang):
     if lang == "ar":
@@ -132,31 +145,34 @@ async def generate_tts(text, lang):
     else:
         voice = "en-US-GuyNeural"    
     output_file = "response_audio.mp3"
-    communicate = edge_tts.Communicate(text, voice, volume="+100%", rate="+10%")
+    communicate = edge_tts.Communicate(text, voice, volume="+100%", rate="+15%")
     await communicate.save(output_file)
     return output_file
 
 # --- MAIN APP LOGIC ---
 st.write("---") 
 
-# Clear Instructions
 st.markdown("<p class='arabic-text'>👇 اضغط على المايكروفون وتحدث مع زايد</p>", unsafe_allow_html=True)
 st.markdown("<p class='english-text'>👇 Press the microphone and talk to Zayed</p>", unsafe_allow_html=True)
 
 col_mic1, col_mic2, col_mic3 = st.columns([1, 1, 1])
 with col_mic2:
     audio_bytes = audio_recorder(
-        text="", # Leave text empty because we added custom text above
+        text="",
         recording_color="#ff0000",
         neutral_color="#00732f",
         icon_name="microphone",
         icon_size="3x",
     )
 
-# --- WAKE WORD LOGIC ---
+# --- WAKE WORD & RESPONSE LOGIC ---
 if audio_bytes:
-    st.info("Processing... / جاري المعالجة...")
-    user_text, detected_lang = transcribe_audio(audio_bytes)
+    # استخدام رسالة استماع متحركة بدلاً من spinner العادي
+    listen_placeholder = st.empty()
+    listen_placeholder.markdown("<div class='thinking-animation'>🎤 زايد يستمع إليك... / Zayed is listening...</div>", unsafe_allow_html=True)
+    
+    user_text, detected_lang = transcribe_audio_groq(audio_bytes)
+    listen_placeholder.empty() # إزالة الرسالة بعد الانتهاء
     
     if user_text:
         st.success(f"**You said / قلت:** {user_text}")
@@ -165,7 +181,6 @@ if audio_bytes:
         wake_words = ["zayed", "زايد", "زايداً", "زايدا"]
         
         if any(word in user_text_lower for word in wake_words):
-            
             prompt_for_ai = user_text
             for word in wake_words:
                 prompt_for_ai = prompt_for_ai.replace(word, "").replace(word.capitalize(), "").strip()
@@ -173,22 +188,34 @@ if audio_bytes:
             if not prompt_for_ai:
                 ai_response = "نعم؟ كيف يمكنني مساعدتك اليوم؟" if detected_lang == "ar" else "Yes? How can I help you today?"
                 st.info(f"**🤖 Zayed:** {ai_response}")
-                with st.spinner("Speaking..."):
-                    audio_file = asyncio.run(generate_tts(ai_response, detected_lang))
-                    with open(audio_file, "rb") as f:
-                        st.audio(f.read(), format="audio/mp3", autoplay=True)
-                    os.remove(audio_file)
+                
+                speak_placeholder = st.empty()
+                speak_placeholder.markdown("<div class='thinking-animation'>🔊 زايد يتحدث... / Zayed is speaking...</div>", unsafe_allow_html=True)
+                
+                audio_file = asyncio.run(generate_tts(ai_response, detected_lang))
+                with open(audio_file, "rb") as f:
+                    st.audio(f.read(), format="audio/mp3", autoplay=True)
+                os.remove(audio_file)
+                speak_placeholder.empty()
+                
             else:
-                with st.spinner("Thinking... / جاري التفكير..."):
-                    ai_response = get_ai_response(prompt_for_ai)
-                    st.info(f"**🤖 Zayed:** {ai_response}")
-                    
-                with st.spinner("Speaking... / جاري التحدث..."):
-                    audio_file = asyncio.run(generate_tts(ai_response, detected_lang))
-                    with open(audio_file, "rb") as f:
-                        st.audio(f.read(), format="audio/mp3", autoplay=True)
-                    os.remove(audio_file)
+                # التفكير والبث
+                think_placeholder = st.empty()
+                think_placeholder.markdown("<div class='thinking-animation'>🧠 زايد يفكر... / Zayed is thinking...</div>", unsafe_allow_html=True)
+                
+                response_text = st.write_stream(get_ai_response_stream(prompt_for_ai))
+                think_placeholder.empty() # إزالة رسالة التفكير بعد ظهور النص
+                
+                # التحدث
+                speak_placeholder = st.empty()
+                speak_placeholder.markdown("<div class='thinking-animation'>🔊 زايد يتحدث... / Zayed is speaking...</div>", unsafe_allow_html=True)
+                
+                audio_file = asyncio.run(generate_tts(response_text, detected_lang))
+                with open(audio_file, "rb") as f:
+                    st.audio(f.read(), format="audio/mp3", autoplay=True)
+                os.remove(audio_file)
+                speak_placeholder.empty()
         else:
             st.warning("I am sleeping. You must call my name first! / أنا نائم. يجب أن تنادي باسمي أولاً! (قل: زايد)")
     else:
-        st.error("Sorry, I couldn't understand. Please try again.")
+        st.error("Sorry, I couldn't understand. Please try again. / عذراً، لم أفهم. حاول مرة أخرى.")
