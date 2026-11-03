@@ -4,7 +4,7 @@ import asyncio
 import os
 from groq import Groq
 from dotenv import load_dotenv
-from audio_recorder_streamlit import audio_recorder  # سطر الاستيراد المهم
+from audio_recorder_streamlit import audio_recorder
 
 # Load local .env file
 load_dotenv()
@@ -38,12 +38,28 @@ st.markdown("""
     .arabic-text { text-align: center; font-size: 24px; color: #333; direction: rtl; font-family: 'Tahoma', sans-serif; margin-bottom: 5px; font-weight: bold;}
     .english-text { text-align: center; font-size: 18px; color: #666; margin-bottom: 20px; }
     
-    /* --- Make the microphone bigger and add a glow --- */
+    /* --- CUSTOM ROUND MIC BUTTON WITH YOUR IMAGE --- */
+    /* 1. Hide the default black box and text */
+    div[data-testid="stAudioRecorder"] > div {
+        display: none;
+    }
+    /* 2. Style the underlying button to be a perfect circle with your image */
     div[data-testid="stAudioRecorder"] button {
-        transform: scale(1.8);
-        margin: 30px 0px;
-        box-shadow: 0 0 20px rgba(0, 115, 47, 0.4);
-        border: 2px solid #00732f;
+        display: block !important;
+        width: 120px !important;
+        height: 120px !important;
+        border-radius: 50% !important;
+        background-image: url("https://raw.githubusercontent.com/AhmedHameed2011/UAE-robot/main/mic_icon.png") !important; /* تأكد من رفع الصورة بهذا الاسم إلى GitHub */
+        background-size: cover !important;
+        background-position: center !important;
+        border: 4px solid #00732f !important; /* إطار أخضر */
+        box-shadow: 0 4px 15px rgba(0, 115, 47, 0.5) !important;
+        margin: 0 auto !important;
+        transition: transform 0.2s !important;
+    }
+    /* 3. Add a hover effect */
+    div[data-testid="stAudioRecorder"] button:hover {
+        transform: scale(1.05) !important;
     }
     
     header {visibility: hidden;} footer {visibility: hidden;} #MainMenu {visibility: hidden;}
@@ -86,11 +102,9 @@ Facts: You are named after Sheikh Zayed. The school is "الظاهر للشرا�
 # --- HELPER FUNCTIONS ---
 
 def transcribe_audio_groq(audio_bytes):
-    """Transcribes audio using Groq's fast Whisper model."""
     temp_file = "temp_audio.wav"
     with open(temp_file, "wb") as f:
         f.write(audio_bytes)
-    
     try:
         with open(temp_file, "rb") as file:
             transcription = client.audio.transcriptions.create(
@@ -114,7 +128,6 @@ def transcribe_audio_groq(audio_bytes):
     return text, lang
 
 def get_ai_response_stream(user_text):
-    """Yields chunks of the AI response for streaming."""
     stream = client.chat.completions.create(
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
@@ -147,6 +160,7 @@ st.markdown("<p class='english-text'>👇 Press the microphone and ask your ques
 
 col_mic1, col_mic2, col_mic3 = st.columns([1, 1, 1])
 with col_mic2:
+    # لاحظ أننا أبقينا النص فارغاً لأننا نخفي الصندوق الأسود بالـ CSS
     audio_bytes = audio_recorder(
         text="",
         recording_color="#ff0000",
@@ -155,7 +169,7 @@ with col_mic2:
         icon_size="3x",
     )
 
-# --- RESPONSE LOGIC (WITHOUT WAKE WORD) ---
+# --- RESPONSE LOGIC ---
 if audio_bytes:
     with st.spinner("Listening... / جاري الاستماع..."):
         user_text, detected_lang = transcribe_audio_groq(audio_bytes)
@@ -163,11 +177,9 @@ if audio_bytes:
     if user_text:
         st.success(f"**You said / قلت:** {user_text}")
         
-        # Check if the user only said "Zayed" without a question
         user_text_lower = user_text.lower().strip()
         wake_words = ["zayed", "زايد"]
         
-        # If the user literally just said "Zayed" or "زايد", we ask them what they want
         if user_text_lower in wake_words:
             ai_response = "نعم؟ كيف يمكنني مساعدتك اليوم؟" if detected_lang == "ar" else "Yes? How can I help you today?"
             st.info(f"**🤖 Zayed:** {ai_response}")
@@ -177,7 +189,6 @@ if audio_bytes:
                     st.audio(f.read(), format="audio/mp3", autoplay=True)
                 os.remove(audio_file)
         else:
-            # If they asked a question, answer it directly (whether they said Zayed or not)
             with st.spinner("Thinking... / جاري التفكير..."):
                 response_text = st.write_stream(get_ai_response_stream(user_text))
             
