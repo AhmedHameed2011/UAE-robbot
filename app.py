@@ -4,7 +4,7 @@ import asyncio
 import os
 from groq import Groq
 from dotenv import load_dotenv
-from audio_recorder_streamlit import audio_recorder # <--- تمت إضافة هذا السطر لإصلاح الخطأ
+from audio_recorder_streamlit import audio_recorder  # سطر الاستيراد المهم
 
 # Load local .env file
 load_dotenv()
@@ -75,7 +75,7 @@ if not GROQ_API_KEY:
     
 client = Groq(api_key=GROQ_API_KEY)
 
-# --- ROBOT'S PERSONALITY (MORE CONCISE) ---
+# --- ROBOT'S PERSONALITY ---
 SYSTEM_PROMPT = """
 You are a friendly robot named "Zayed" (زايد) at a UAE 55th National Day school exhibition.
 Answer briefly (2-3 sentences). Be warm and engaging.
@@ -95,11 +95,10 @@ def transcribe_audio_groq(audio_bytes):
         with open(temp_file, "rb") as file:
             transcription = client.audio.transcriptions.create(
                 file=(temp_file, file.read()),
-                model="whisper-large-v3-turbo",  # Fastest model
+                model="whisper-large-v3-turbo",
                 response_format="text",
-                language=None # Auto-detect
+                language=None
             )
-        # Groq returns a string when response_format="text"
         text = transcription.strip() if isinstance(transcription, str) else transcription.text.strip()
     except Exception as e:
         print(f"Groq transcription error: {e}")
@@ -108,7 +107,6 @@ def transcribe_audio_groq(audio_bytes):
         if os.path.exists(temp_file):
             os.remove(temp_file)
     
-    # Simple language detection based on characters
     if text:
         lang = "ar" if any('\u0600' <= c <= '\u06FF' for c in text) else "en"
     else:
@@ -124,8 +122,8 @@ def get_ai_response_stream(user_text):
         ],
         model="openai/gpt-oss-20b",
         temperature=0.6,
-        max_tokens=150,  # Reduced for speed
-        stream=True,     # Enable streaming
+        max_tokens=150,
+        stream=True,
     )
     for chunk in stream:
         if chunk.choices[0].delta.content:
@@ -137,7 +135,6 @@ async def generate_tts(text, lang):
     else:
         voice = "en-US-GuyNeural"    
     output_file = "response_audio.mp3"
-    # Slightly faster rate
     communicate = edge_tts.Communicate(text, voice, volume="+100%", rate="+15%")
     await communicate.save(output_file)
     return output_file
@@ -145,8 +142,8 @@ async def generate_tts(text, lang):
 # --- MAIN APP LOGIC ---
 st.write("---") 
 
-st.markdown("<p class='arabic-text'>👇 اضغط على المايكروفون وتحدث مع زايد</p>", unsafe_allow_html=True)
-st.markdown("<p class='english-text'>👇 Press the microphone and talk to Zayed</p>", unsafe_allow_html=True)
+st.markdown("<p class='arabic-text'>👇 اضغط على المايكروفون واطرح سؤالك</p>", unsafe_allow_html=True)
+st.markdown("<p class='english-text'>👇 Press the microphone and ask your question</p>", unsafe_allow_html=True)
 
 col_mic1, col_mic2, col_mic3 = st.columns([1, 1, 1])
 with col_mic2:
@@ -158,7 +155,7 @@ with col_mic2:
         icon_size="3x",
     )
 
-# --- WAKE WORD & RESPONSE LOGIC ---
+# --- RESPONSE LOGIC (WITHOUT WAKE WORD) ---
 if audio_bytes:
     with st.spinner("Listening... / جاري الاستماع..."):
         user_text, detected_lang = transcribe_audio_groq(audio_bytes)
@@ -166,36 +163,28 @@ if audio_bytes:
     if user_text:
         st.success(f"**You said / قلت:** {user_text}")
         
-        user_text_lower = user_text.lower()
-        wake_words = ["zayed", "زايد", "زايداً", "زايدا"]
+        # Check if the user only said "Zayed" without a question
+        user_text_lower = user_text.lower().strip()
+        wake_words = ["zayed", "زايد"]
         
-        if any(word in user_text_lower for word in wake_words):
-            # Clean the prompt
-            prompt_for_ai = user_text
-            for word in wake_words:
-                prompt_for_ai = prompt_for_ai.replace(word, "").replace(word.capitalize(), "").strip()
-                
-            if not prompt_for_ai:
-                ai_response = "نعم؟ كيف يمكنني مساعدتك اليوم؟" if detected_lang == "ar" else "Yes? How can I help you today?"
-                st.info(f"**🤖 Zayed:** {ai_response}")
-                with st.spinner("Speaking..."):
-                    audio_file = asyncio.run(generate_tts(ai_response, detected_lang))
-                    with open(audio_file, "rb") as f:
-                        st.audio(f.read(), format="audio/mp3", autoplay=True)
-                    os.remove(audio_file)
-            else:
-                # Stream the response text
-                with st.spinner("Thinking... / جاري التفكير..."):
-                    # Use st.write_stream to display text as it arrives
-                    response_text = st.write_stream(get_ai_response_stream(prompt_for_ai))
-                
-                # Generate and play audio for the complete text
-                with st.spinner("Speaking... / جاري التحدث..."):
-                    audio_file = asyncio.run(generate_tts(response_text, detected_lang))
-                    with open(audio_file, "rb") as f:
-                        st.audio(f.read(), format="audio/mp3", autoplay=True)
-                    os.remove(audio_file)
+        # If the user literally just said "Zayed" or "زايد", we ask them what they want
+        if user_text_lower in wake_words:
+            ai_response = "نعم؟ كيف يمكنني مساعدتك اليوم؟" if detected_lang == "ar" else "Yes? How can I help you today?"
+            st.info(f"**🤖 Zayed:** {ai_response}")
+            with st.spinner("Speaking..."):
+                audio_file = asyncio.run(generate_tts(ai_response, detected_lang))
+                with open(audio_file, "rb") as f:
+                    st.audio(f.read(), format="audio/mp3", autoplay=True)
+                os.remove(audio_file)
         else:
-            st.warning("I am sleeping. You must call my name first! / أنا نائم. يجب أن تنادي باسمي أولاً! (قل: زايد)")
+            # If they asked a question, answer it directly (whether they said Zayed or not)
+            with st.spinner("Thinking... / جاري التفكير..."):
+                response_text = st.write_stream(get_ai_response_stream(user_text))
+            
+            with st.spinner("Speaking... / جاري التحدث..."):
+                audio_file = asyncio.run(generate_tts(response_text, detected_lang))
+                with open(audio_file, "rb") as f:
+                    st.audio(f.read(), format="audio/mp3", autoplay=True)
+                os.remove(audio_file)
     else:
         st.error("Sorry, I couldn't understand. Please try again. / عذراً، لم أفهم. حاول مرة أخرى.")
