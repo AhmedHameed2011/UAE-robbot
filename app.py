@@ -4,6 +4,7 @@ import asyncio
 import os
 from groq import Groq
 from dotenv import load_dotenv
+from audio_recorder_streamlit import audio_recorder
 
 # Load local .env file
 load_dotenv()
@@ -37,9 +38,32 @@ st.markdown("""
     .arabic-text { text-align: center; font-size: 24px; color: #333; direction: rtl; font-family: 'Tahoma', sans-serif; margin-bottom: 5px; font-weight: bold;}
     .english-text { text-align: center; font-size: 18px; color: #666; margin-bottom: 20px; }
     
-    /* تنسيق مخصص لمربع كلام الروبوت */
+    /* تصميم الزر الدائري الكبير */
+    div[data-testid="stAudioRecorder"] button {
+        background-color: #00732f !important; /* لون أخضر */
+        color: white !important;
+        width: 120px !important;
+        height: 120px !important;
+        border-radius: 50% !important; /* يجعله دائرياً */
+        box-shadow: 0 0 20px rgba(0, 115, 47, 0.6) !important;
+        border: 4px solid #ffffff !important;
+        margin: 20px auto !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        transition: transform 0.2s !important;
+    }
+    div[data-testid="stAudioRecorder"] button:hover {
+        transform: scale(1.1) !important;
+    }
+    /* إخفاء النص والصندوق الأسود الافتراضي */
+    div[data-testid="stAudioRecorder"] > div > div {
+        display: none !important;
+    }
+
+    /* مربع كلام الروبوت */
     .robot-bubble {
-        background-color: #e8f5e9; /* لون أخضر فاتح */
+        background-color: #e8f5e9;
         color: #1b5e20;
         padding: 15px 20px;
         border-radius: 15px;
@@ -47,6 +71,7 @@ st.markdown("""
         margin: 15px 0;
         font-size: 18px;
         direction: rtl;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
     
     header {visibility: hidden;} footer {visibility: hidden;} #MainMenu {visibility: hidden;}
@@ -139,15 +164,22 @@ async def generate_tts(text, lang):
 # --- MAIN APP LOGIC ---
 st.write("---") 
 
-st.markdown("<p class='arabic-text'>👇 اضغط على زر التسجيل تكلم مع زايد</p>", unsafe_allow_html=True)
-st.markdown("<p class='english-text'>👇 Click the record button and ask your question</p>", unsafe_allow_html=True)
+st.markdown("<p class='arabic-text'>👇 اضغط على المايكروفون وتحدث</p>", unsafe_allow_html=True)
+st.markdown("<p class='english-text'>👇 Press the microphone and talk</p>", unsafe_allow_html=True)
 
-# استخدام st.audio_input المدمج
-audio_file = st.audio_input("سجل صوتك هنا / Record your voice here")
+col_mic1, col_mic2, col_mic3 = st.columns([1, 1, 1])
+with col_mic2:
+    # زر التسجيل الدائري
+    audio_bytes = audio_recorder(
+        text="", 
+        recording_color="#ff0000",
+        neutral_color="#00732f",
+        icon_name="microphone",
+        icon_size="3x",
+    )
 
-if audio_file:
-    audio_bytes = audio_file.read()
-    
+# --- RESPONSE LOGIC ---
+if audio_bytes:
     with st.spinner("Listening... / جاري الاستماع..."):
         user_text, detected_lang = transcribe_audio_groq(audio_bytes)
     
