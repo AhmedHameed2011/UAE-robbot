@@ -7,7 +7,7 @@ import os
 from groq import Groq
 from dotenv import load_dotenv
 
-# Load local .env file (for testing on your laptop)
+# Load local .env file
 load_dotenv()
 
 # --- API KEY SETUP ---
@@ -17,17 +17,12 @@ except Exception:
     GROQ_API_KEY = os.getenv("GROQ_API")
 
 # --- UI SETUP ---
-st.set_page_config(page_title="UAE 55 Robot", page_icon="🇦🇪", layout="centered")
+st.set_page_config(page_title="Zayed Robot", page_icon="🇦🇪", layout="centered")
 
-# --- CUSTOM CSS FOR EXHIBITION KIOSK ---
+# --- CUSTOM CSS ---
 st.markdown("""
     <style>
-    /* Main background */
-    .stApp { 
-        background-color: #f8f9fa; 
-    }
-    
-    /* UAE Flag Top Border */
+    .stApp { background-color: #f8f9fa; }
     .uae-border {
         height: 10px;
         background: linear-gradient(to right, #00732f 33%, #ffffff 33%, #ffffff 66%, #000000 66%);
@@ -35,58 +30,23 @@ st.markdown("""
         margin-bottom: 30px;
         border-radius: 5px;
     }
-
-    /* Title Styling */
-    h1 { 
-        color: #00732f; 
-        text-align: center; 
-        font-family: 'Arial', sans-serif; 
-        font-weight: bold;
-    }
-    
-    /* The "Card" for QR Code */
+    h1 { color: #00732f; text-align: center; font-family: 'Arial', sans-serif; font-weight: bold; }
     .qr-card {
-        background-color: white;
-        padding: 20px;
-        border-radius: 15px;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        text-align: center;
-        margin: 20px auto;
-        max-width: 300px;
+        background-color: white; padding: 20px; border-radius: 15px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1); text-align: center;
+        margin: 20px auto; max-width: 300px;
     }
-
-    /* Bilingual Text Styling */
-    .arabic-text { 
-        text-align: center; 
-        font-size: 22px; 
-        color: #333; 
-        direction: rtl; 
-        font-family: 'Tahoma', sans-serif;
-        margin-bottom: 5px;
-    }
-    .english-text { 
-        text-align: center; 
-        font-size: 18px; 
-        color: #666; 
-        margin-bottom: 20px;
-    }
-    
-    /* Hide standard Streamlit header/footer */
-    header {visibility: hidden;}
-    footer {visibility: hidden;}
-    #MainMenu {visibility: hidden;}
+    .arabic-text { text-align: center; font-size: 22px; color: #333; direction: rtl; font-family: 'Tahoma', sans-serif; margin-bottom: 5px; }
+    .english-text { text-align: center; font-size: 18px; color: #666; margin-bottom: 20px; }
+    header {visibility: hidden;} footer {visibility: hidden;} #MainMenu {visibility: hidden;}
     </style>
 """, unsafe_allow_html=True)
 
 # --- RENDER UI ---
-# UAE Flag Border
 st.markdown("<div class='uae-border'></div>", unsafe_allow_html=True)
+st.markdown("<h1>🤖 زايد - صديق اليوم الوطني 55</h1>", unsafe_allow_html=True)
+st.markdown("<h2 style='text-align: center; color: #333;'>Zayed - National Day 55 Buddy</h2>", unsafe_allow_html=True)
 
-# Header
-st.markdown("<h1>🤖 صديق اليوم الوطني 55</h1>", unsafe_allow_html=True)
-st.markdown("<h2 style='text-align: center; color: #333;'>National Day 55 Buddy</h2>", unsafe_allow_html=True)
-
-# QR Code & Instructions Card
 st.markdown("""
     <div class='qr-card'>
         <p style='font-size: 16px; font-weight: bold; color: #00732f;'>📱 Scan to try on your phone</p>
@@ -98,31 +58,32 @@ with col2:
     try:
         st.image("qr_code.png", use_container_width=True)
     except Exception:
-        st.warning("QR Code image not found. Please ensure 'qr_code.png' is in the folder.")
+        st.warning("QR Code image not found.")
 
-# Instructions (Bilingual)
-st.markdown("<p class='arabic-text'>مرحباً بك! اضغط على المايك وتحدث بالعربية أو الإنجليزية.</p>", unsafe_allow_html=True)
-st.markdown("<p class='english-text'>Welcome! Press the mic and speak in Arabic or English.</p>", unsafe_allow_html=True)
+st.markdown("<p class='arabic-text'>مرحباً بك! نادِ الروبوت باسم <b>زايد</b> ثم اطرح سؤالك.</p>", unsafe_allow_html=True)
+st.markdown("<p class='english-text'>Welcome! Call the robot <b>Zayed</b> and ask your question.</p>", unsafe_allow_html=True)
 
 # --- INITIALIZE GROQ ---
 if not GROQ_API_KEY:
-    st.error("API Key not found. Please check your Streamlit Secrets or .env file.")
+    st.error("API Key not found.")
     st.stop()
     
 client = Groq(api_key=GROQ_API_KEY)
 
 # --- ROBOT'S PERSONALITY ---
 SYSTEM_PROMPT = """
-You are a friendly, intelligent robot at a school exhibition for the UAE 55th National Day.
+You are a friendly, intelligent robot named "Zayed" (زايد). You are at a school exhibition for the UAE 55th National Day.
 Your job is to answer parents' questions.
 You MUST follow these rules strictly:
 1. If the user speaks Arabic, reply in Arabic.
 2. If the user speaks English, reply in English.
 3. Provide a detailed, warm, and engaging answer (about 3 to 4 sentences). Elaborate on the facts to make it interesting for the parents.
 4. Remember these facts:
+   - Your name is Zayed. You are named in honor of the late Sheikh Zayed bin Sultan Al Nahyan, the founding father of the UAE.
+   - The school hosting this exhibition is "الظاهر للشراكات التعليمية" (Al Dhahir for Educational Partnerships).
    - The UAE 55th National Day is on December 2nd, 2026.
    - This exhibition showcases student projects in Artificial Intelligence.
-   - You are built using Python and AI by a brilliant student.
+   - You are built using Python and AI by a brilliant student from this school.
 """
 
 # --- HELPER FUNCTIONS ---
@@ -161,48 +122,68 @@ def get_ai_response(user_text):
 
 async def generate_tts(text, lang):
     if lang == "ar":
-        voice = "ar-AE-FatimaNeural" 
+        voice = "ar-AE-HamdanNeural" # Changed to a male voice (Hamdan) to suit the name Zayed
     else:
-        voice = "en-US-AriaNeural"   
+        voice = "en-US-GuyNeural"    # Changed to a male voice (Guy) for English
     output_file = "response_audio.mp3"
-    # Increased volume and rate
     communicate = edge_tts.Communicate(text, voice, volume="+100%", rate="+10%")
     await communicate.save(output_file)
     return output_file
 
 # --- MAIN APP LOGIC ---
-st.write("---") # Visual separator
+st.write("---") 
 
-# Center the Audio Recorder
 col_mic1, col_mic2, col_mic3 = st.columns([1, 1, 1])
 with col_mic2:
     audio_bytes = audio_recorder(
-        text="Click to Speak | اضغط للتحدث",
+        text="Click & Say: Zayed! | قل: زايد!",
         recording_color="#ff0000",
         neutral_color="#00732f",
         icon_name="microphone",
         icon_size="3x",
     )
 
+# --- WAKE WORD LOGIC ---
 if audio_bytes:
     st.info("Processing... / جاري المعالجة...")
     user_text, detected_lang = transcribe_audio(audio_bytes)
     
     if user_text:
-        # Display what the user said in a nice box
         st.success(f"**You said / قلت:** {user_text}")
         
-        with st.spinner("Thinking... / جاري التفكير..."):
-            ai_response = get_ai_response(user_text)
-            # Display AI response in a chat bubble style
-            st.info(f"**🤖 Robot:** {ai_response}")
+        # Check for the wake word "Zayed" (and common Arabic spelling variations)
+        user_text_lower = user_text.lower()
+        wake_words = ["zayed", "زايد", "زايداً", "زايدا"]
+        
+        if any(word in user_text_lower for word in wake_words):
             
-        with st.spinner("Speaking... / جاري التحدث..."):
-            audio_file = asyncio.run(generate_tts(ai_response, detected_lang))
-            with open(audio_file, "rb") as f:
-                audio_data = f.read()
-                st.audio(audio_data, format="audio/mp3", autoplay=True)
-            if os.path.exists(audio_file):
-                os.remove(audio_file)
+            # Remove the wake word from the prompt before sending to AI
+            prompt_for_ai = user_text
+            for word in wake_words:
+                prompt_for_ai = prompt_for_ai.replace(word, "").replace(word.capitalize(), "").strip()
+                
+            if not prompt_for_ai:
+                # If they JUST said "Zayed" without asking a question
+                ai_response = "نعم؟ كيف يمكنني مساعدتك اليوم؟" if detected_lang == "ar" else "Yes? How can I help you today?"
+                st.info(f"**🤖 Zayed:** {ai_response}")
+                with st.spinner("Speaking..."):
+                    audio_file = asyncio.run(generate_tts(ai_response, detected_lang))
+                    with open(audio_file, "rb") as f:
+                        st.audio(f.read(), format="audio/mp3", autoplay=True)
+                    os.remove(audio_file)
+            else:
+                # They said "Zayed" AND asked a question
+                with st.spinner("Thinking... / جاري التفكير..."):
+                    ai_response = get_ai_response(prompt_for_ai)
+                    st.info(f"**🤖 Zayed:** {ai_response}")
+                    
+                with st.spinner("Speaking... / جاري التحدث..."):
+                    audio_file = asyncio.run(generate_tts(ai_response, detected_lang))
+                    with open(audio_file, "rb") as f:
+                        st.audio(f.read(), format="audio/mp3", autoplay=True)
+                    os.remove(audio_file)
+        else:
+            # If the wake word was not detected
+            st.warning("I am sleeping. You must call my name first! / أنا نائم. يجب أن تنادي باسمي أولاً! (قل: زايد)")
     else:
-        st.error("Sorry, I couldn't understand. Please try again. / عذراً، لم أفهم. حاول مرة أخرى.")
+        st.error("Sorry, I couldn't understand. Please try again.")
