@@ -36,8 +36,17 @@ st.markdown("""
         box-shadow: 0 4px 8px rgba(0,0,0,0.1); text-align: center;
         margin: 20px auto; max-width: 300px;
     }
-    .arabic-text { text-align: center; font-size: 22px; color: #333; direction: rtl; font-family: 'Tahoma', sans-serif; margin-bottom: 5px; }
+    .arabic-text { text-align: center; font-size: 24px; color: #333; direction: rtl; font-family: 'Tahoma', sans-serif; margin-bottom: 5px; font-weight: bold;}
     .english-text { text-align: center; font-size: 18px; color: #666; margin-bottom: 20px; }
+    
+    /* --- NEW: Make the microphone bigger and add a glow --- */
+    div[data-testid="stAudioRecorder"] button {
+        transform: scale(1.8); /* Makes the button 1.8x larger */
+        margin: 30px 0px;      /* Adds space around the button */
+        box-shadow: 0 0 20px rgba(0, 115, 47, 0.4); /* Green glow */
+        border: 2px solid #00732f;
+    }
+    
     header {visibility: hidden;} footer {visibility: hidden;} #MainMenu {visibility: hidden;}
     </style>
 """, unsafe_allow_html=True)
@@ -59,9 +68,6 @@ with col2:
         st.image("qr_code.png", use_container_width=True)
     except Exception:
         st.warning("QR Code image not found.")
-
-st.markdown("<p class='arabic-text'>مرحباً بك! نادِ الروبوت باسم <b>زايد</b> ثم اطرح سؤالك.</p>", unsafe_allow_html=True)
-st.markdown("<p class='english-text'>Welcome! Call the robot <b>Zayed</b> and ask your question.</p>", unsafe_allow_html=True)
 
 # --- INITIALIZE GROQ ---
 if not GROQ_API_KEY:
@@ -122,9 +128,9 @@ def get_ai_response(user_text):
 
 async def generate_tts(text, lang):
     if lang == "ar":
-        voice = "ar-AE-HamdanNeural" # Changed to a male voice (Hamdan) to suit the name Zayed
+        voice = "ar-AE-HamdanNeural" 
     else:
-        voice = "en-US-GuyNeural"    # Changed to a male voice (Guy) for English
+        voice = "en-US-GuyNeural"    
     output_file = "response_audio.mp3"
     communicate = edge_tts.Communicate(text, voice, volume="+100%", rate="+10%")
     await communicate.save(output_file)
@@ -133,10 +139,14 @@ async def generate_tts(text, lang):
 # --- MAIN APP LOGIC ---
 st.write("---") 
 
+# Clear Instructions
+st.markdown("<p class='arabic-text'>👇 اضغط على المايكروفون وتحدث مع زايد</p>", unsafe_allow_html=True)
+st.markdown("<p class='english-text'>👇 Press the microphone and talk to Zayed</p>", unsafe_allow_html=True)
+
 col_mic1, col_mic2, col_mic3 = st.columns([1, 1, 1])
 with col_mic2:
     audio_bytes = audio_recorder(
-        text="Click & Say: Zayed! | قل: زايد!",
+        text="", # Leave text empty because we added custom text above
         recording_color="#ff0000",
         neutral_color="#00732f",
         icon_name="microphone",
@@ -151,19 +161,16 @@ if audio_bytes:
     if user_text:
         st.success(f"**You said / قلت:** {user_text}")
         
-        # Check for the wake word "Zayed" (and common Arabic spelling variations)
         user_text_lower = user_text.lower()
         wake_words = ["zayed", "زايد", "زايداً", "زايدا"]
         
         if any(word in user_text_lower for word in wake_words):
             
-            # Remove the wake word from the prompt before sending to AI
             prompt_for_ai = user_text
             for word in wake_words:
                 prompt_for_ai = prompt_for_ai.replace(word, "").replace(word.capitalize(), "").strip()
                 
             if not prompt_for_ai:
-                # If they JUST said "Zayed" without asking a question
                 ai_response = "نعم؟ كيف يمكنني مساعدتك اليوم؟" if detected_lang == "ar" else "Yes? How can I help you today?"
                 st.info(f"**🤖 Zayed:** {ai_response}")
                 with st.spinner("Speaking..."):
@@ -172,7 +179,6 @@ if audio_bytes:
                         st.audio(f.read(), format="audio/mp3", autoplay=True)
                     os.remove(audio_file)
             else:
-                # They said "Zayed" AND asked a question
                 with st.spinner("Thinking... / جاري التفكير..."):
                     ai_response = get_ai_response(prompt_for_ai)
                     st.info(f"**🤖 Zayed:** {ai_response}")
@@ -183,7 +189,6 @@ if audio_bytes:
                         st.audio(f.read(), format="audio/mp3", autoplay=True)
                     os.remove(audio_file)
         else:
-            # If the wake word was not detected
             st.warning("I am sleeping. You must call my name first! / أنا نائم. يجب أن تنادي باسمي أولاً! (قل: زايد)")
     else:
         st.error("Sorry, I couldn't understand. Please try again.")
