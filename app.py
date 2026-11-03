@@ -78,11 +78,11 @@ Your job is to answer parents' questions.
 You MUST follow these rules strictly:
 1. If the user speaks Arabic, reply in Arabic.
 2. If the user speaks English, reply in English.
-3. Keep your answers short (1-2 sentences), friendly, and enthusiastic.
+3. Provide a detailed, warm, and engaging answer (about 3 to 4 sentences). Elaborate on the facts to make it interesting for the parents.
 4. Remember these facts:
    - The UAE 55th National Day is on December 2nd, 2026.
    - This exhibition showcases student projects in Artificial Intelligence.
-   - You are built using Python and AI by a brilliant students.
+   - You are built using Python and AI by a brilliant student.
 """
 
 # --- HELPER FUNCTIONS ---
@@ -122,21 +122,26 @@ def get_ai_response(user_text):
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_text}
         ],
-        model="openai/gpt-oss-20b", # The updated Groq model
+        model="openai/gpt-oss-20b",
         temperature=0.6,
-        max_tokens=150,
+        max_tokens=300, # <--- Increased from 150 to 300 for longer speech
     )
     return completion.choices[0].message.content
+
 
 async def generate_tts(text, lang):
     """Generates an MP3 file using Microsoft Edge TTS."""
     if lang == "ar":
-        voice = "ar-AE-FatimaNeural" # Emirati Arabic voice
+        voice = "ar-AE-FatimaNeural" 
     else:
-        voice = "en-US-AriaNeural"   # Friendly English voice
+        voice = "en-US-AriaNeural"   
         
     output_file = "response_audio.mp3"
-    communicate = edge_tts.Communicate(text, voice)
+    
+    # --- NEW: Add volume and rate control here ---
+    # volume can be up to "+100%", rate can be adjusted (e.g., "+10%")
+    communicate = edge_tts.Communicate(text, voice, volume="+100%", rate="+10%")
+    
     await communicate.save(output_file)
     return output_file
 
