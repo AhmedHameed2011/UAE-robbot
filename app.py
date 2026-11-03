@@ -40,11 +40,11 @@ st.markdown("""
     
     /* تصميم الزر الدائري الكبير */
     div[data-testid="stAudioRecorder"] button {
-        background-color: #00732f !important; /* لون أخضر */
+        background-color: #00732f !important;
         color: white !important;
         width: 120px !important;
         height: 120px !important;
-        border-radius: 50% !important; /* يجعله دائرياً */
+        border-radius: 50% !important;
         box-shadow: 0 0 20px rgba(0, 115, 47, 0.6) !important;
         border: 4px solid #ffffff !important;
         margin: 20px auto !important;
@@ -157,19 +157,31 @@ async def generate_tts(text, lang):
     else:
         voice = "en-US-GuyNeural"    
     output_file = "response_audio.mp3"
-    communicate = edge_tts.Communicate(text, voice, volume="+100%", rate="+15%")
-    await communicate.save(output_file)
-    return output_file
+    
+    # إعادة المحاولة حتى 3 مرات في حال فشل الخدمة
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            communicate = edge_tts.Communicate(text, voice, volume="+100%", rate="+15%")
+            await communicate.save(output_file)
+            return output_file
+        except edge_tts.exceptions.NoAudioReceived:
+            if attempt < max_retries - 1:
+                print(f"TTS attempt {attempt + 1} failed, retrying...")
+                await asyncio.sleep(1.5)
+            else:
+                raise
+        except Exception as e:
+            raise e
 
 # --- MAIN APP LOGIC ---
 st.write("---") 
 
-st.markdown("<p class='arabic-text'>👇 اضغط على المايكروفون وتحدث</p>", unsafe_allow_html=True)
-st.markdown("<p class='english-text'>👇 Press the microphone and talk</p>", unsafe_allow_html=True)
+st.markdown("<p class='arabic-text'>👇  اضغط على المايكروفون وتحدث مع زايد</p>", unsafe_allow_html=True)
+st.markdown("<p class='english-text'>👇 Press the microphone and talk to Zayed</p>", unsafe_allow_html=True)
 
 col_mic1, col_mic2, col_mic3 = st.columns([1, 1, 1])
 with col_mic2:
-    # زر التسجيل الدائري
     audio_bytes = audio_recorder(
         text="", 
         recording_color="#ff0000",
@@ -193,9 +205,12 @@ if audio_bytes:
             st.markdown(f"<div class='robot-bubble'>🤖 <b>زايد:</b> {ai_response}</div>", unsafe_allow_html=True)
         
         with st.spinner("Speaking... / جاري التحدث..."):
-            audio_out_file = asyncio.run(generate_tts(ai_response, detected_lang))
-            with open(audio_out_file, "rb") as f:
-                st.audio(f.read(), format="audio/mp3", autoplay=True)
-            os.remove(audio_out_file)
+            try:
+                audio_out_file = asyncio.run(generate_tts(ai_response, detected_lang))
+                with open(audio_out_file, "rb") as f:
+                    st.audio(f.read(), format="audio/mp3", autoplay=True)
+                os.remove(audio_out_file)
+            except Exception as e:
+                st.warning("عذراً، حدث تأخير في الصوت. / Sorry, audio generation failed. Please try again.")
     else:
         st.error("Sorry, I couldn't understand. Please try again. / عذراً، لم أفهم. حاول مرة أخرى.")
