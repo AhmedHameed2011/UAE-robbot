@@ -23,45 +23,39 @@ st.set_page_config(page_title="Zayed Robot", page_icon="🇦🇪🤖", layout="c
 # --- CUSTOM CSS ---
 st.markdown("""
     <style>
-    /* إزالة جميع الهوامش العلوية والسفلية الافتراضية */
+    /* إزالة الهوامش الافتراضية للصفحة */
     .block-container {
         padding-top: 0rem !important;
         padding-bottom: 0rem !important;
-        padding-left: 1rem;
-        padding-right: 1rem;
-        margin-top: -2rem; /* سحب المحتوى للأعلى */
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
     }
     
-    .stApp { background-color: #f8f9fa; }
+    .stApp { background-color: #ffffff; }
     
-    /* إزالة أي فراغات بين العناصر */
+    /* تقليل المسافات بين العناصر بشكل آمن */
     div[data-testid="stVerticalBlock"] > div {
-        gap: 0rem !important; 
+        gap: 0.2rem !important; 
     }
 
-    /* تنسيق العناوين */
-    h1 { color: #00732f; text-align: center; font-family: 'Arial', sans-serif; font-weight: bold; margin-top: 0px; margin-bottom: 0px; font-size: 28px;}
-    h2 { text-align: center; color: #333; margin-bottom: 5px; margin-top: 0px; font-size: 18px;}
+    /* العناوين */
+    h1 { color: #00732f; text-align: center; font-family: 'Arial', sans-serif; font-weight: bold; margin-top: 5px; margin-bottom: 0px; font-size: 24px;}
+    h2 { text-align: center; color: #333; margin-bottom: 10px; margin-top: 0px; font-size: 16px;}
     
-    /* تنسيق بطاقة الـ QR */
-    .qr-card {
-        background-color: white; padding: 5px; border-radius: 10px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;
-        margin: 5px auto; max-width: 200px;
-    }
-    
-    .arabic-text { text-align: center; font-size: 18px; color: #333; direction: rtl; font-family: 'Tahoma', sans-serif; margin-bottom: 0px; margin-top: 5px; font-weight: bold;}
-    .english-text { text-align: center; font-size: 14px; color: #666; margin-bottom: 0px; }
+    /* النصوص */
+    .arabic-text { text-align: center; font-size: 18px; color: #333; direction: rtl; font-family: 'Tahoma', sans-serif; margin-bottom: 0px; margin-top: 10px; font-weight: bold;}
+    .english-text { text-align: center; font-size: 14px; color: #666; margin-bottom: 5px; }
     
     /* تكبير زر المايكروفون */
     div[data-testid="stAudioRecorder"] button {
-        transform: scale(1.4);
-        margin: 0px;
+        transform: scale(1.5);
+        margin: 0px auto;
+        display: block;
         box-shadow: 0 0 15px rgba(0, 115, 47, 0.4);
         border: 2px solid #00732f;
     }
 
-    /* تأثير الرسوم المتحركة للانتظار */
+    /* تأثير الرسوم المتحركة */
     @keyframes pulse {
         0% { opacity: 0.6; }
         50% { opacity: 1; }
@@ -72,61 +66,50 @@ st.markdown("""
         font-size: 16px;
         color: #00732f;
         animation: pulse 1.5s infinite;
-        margin-top: 5px;
+        margin-top: 10px;
     }
     
     /* إخفاء عناصر Streamlit الافتراضية */
     header {visibility: hidden;} footer {visibility: hidden;} #MainMenu {visibility: hidden;}
+    hr { display: none; }
     </style>
 """, unsafe_allow_html=True)
 
 # --- RENDER UI ---
-# عرض صورة الغلاف مع "قص" الجزء السفلي منها لتقليل المسافة
+# عرض صورة الغلاف
 try:
-    st.markdown("""
-        <style>
-        /* هذا الكود يقوم بقص الجزء السفلي من الصورة (20%) لإزالة الفراغ الأبيض بداخلها */
-        div[data-testid="stImage"] img {
-            object-fit: cover;
-            object-position: top;
-            aspect-ratio: 2.5 / 1; /* تغيير النسبة لقص الجزء السفلي */
-        }
-        </style>
-    """, unsafe_allow_html=True)
     st.image("intro.png", use_container_width=True)
 except Exception:
     st.warning("⚠️ لم يتم العثور على صورة الغلاف 'intro.png'.")
 
-# استخدام حاوية لتجميع العناصر معاً
-with st.container():
-    st.markdown("<h1>🤖 زايد - صديق اليوم الوطني 55</h1>", unsafe_allow_html=True)
-    st.markdown("<h2>Zayed - National Day 55 Buddy</h2>", unsafe_allow_html=True)
+# العناوين
+st.markdown("<h1>🤖 زايد - صديق اليوم الوطني 55</h1>", unsafe_allow_html=True)
+st.markdown("<h2>Zayed - National Day 55 Buddy</h2>", unsafe_allow_html=True)
 
-    # استخدام الأعمدة لوضع الـ QR والمايك بجانب بعضهما أو متقاربين جداً
-    col_qr, col_mic = st.columns([1, 1])
+# عرض الـ QR في المنتصف (بدون أعمدة جانبية لضمان وضوحه)
+st.markdown("<p style='text-align: center; font-size: 16px; font-weight: bold; color: #00732f; margin-bottom: 5px; margin-top: 10px;'>📱 Scan to try on your phone</p>", unsafe_allow_html=True)
 
-    with col_qr:
-        st.markdown("""
-            <div class='qr-card'>
-                <p style='font-size: 12px; font-weight: bold; color: #00732f; margin: 0;'>📱 Scan to try</p>
-            </div>
-        """, unsafe_allow_html=True)
-        try:
-            st.image("qr_code.png", use_container_width=True)
-        except Exception:
-            st.warning("QR Code not found.")
+col_qr1, col_qr2, col_qr3 = st.columns([1, 1, 1])
+with col_qr2:
+    try:
+        # عرض الصورة بحجم مناسب وواضح
+        st.image("qr_code.png", use_container_width=True)
+    except Exception:
+        st.warning("QR Code image not found.")
 
-    with col_mic:
-        st.markdown("<p class='arabic-text' style='margin-top: 20px;'>👇 تحدث مع زايد</p>", unsafe_allow_html=True)
-        st.markdown("<p class='english-text'>👇 Talk to Zayed</p>", unsafe_allow_html=True)
-        
-        audio_bytes = audio_recorder(
-            text="",
-            recording_color="#ff0000",
-            neutral_color="#00732f",
-            icon_name="microphone",
-            icon_size="2x",
-        )
+# المايكروفون
+st.markdown("<p class='arabic-text'>👇 تحدث مع زايد</p>", unsafe_allow_html=True)
+st.markdown("<p class='english-text'>👇 Talk to Zayed</p>", unsafe_allow_html=True)
+
+col_mic1, col_mic2, col_mic3 = st.columns([1, 1, 1])
+with col_mic2:
+    audio_bytes = audio_recorder(
+        text="",
+        recording_color="#ff0000",
+        neutral_color="#00732f",
+        icon_name="microphone",
+        icon_size="2x",
+    )
 
 # --- INITIALIZE GROQ ---
 if not GROQ_API_KEY:
@@ -205,10 +188,6 @@ async def generate_tts(text, lang):
     communicate = edge_tts.Communicate(text, voice, volume="+100%", rate="+15%")
     await communicate.save(output_file)
     return output_file
-
-# --- MAIN APP LOGIC ---
-# إضافة خط فاصل رفيع جداً
-st.markdown("<hr style='margin: 5px 0px; border: 0.5px solid #ddd;'>", unsafe_allow_html=True)
 
 # --- RESPONSE LOGIC ---
 if audio_bytes:
