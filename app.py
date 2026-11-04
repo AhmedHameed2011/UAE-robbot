@@ -23,7 +23,7 @@ st.set_page_config(page_title="Zayed Robot", page_icon="🇦🇪🤖", layout="c
 # --- CUSTOM CSS ---
 st.markdown("""
     <style>
-    /* إزالة الهوامش الافتراضية للصفحة */
+    /* إزالة الهوامش الافتراضية للصفحة بالكامل */
     .block-container {
         padding-top: 0rem !important;
         padding-bottom: 0rem !important;
@@ -35,11 +35,11 @@ st.markdown("""
     
     /* تقليل المسافات بين العناصر بشكل آمن */
     div[data-testid="stVerticalBlock"] > div {
-        gap: 0.2rem !important; 
+        gap: 0.3rem !important; 
     }
 
     /* العناوين */
-    h1 { color: #00732f; text-align: center; font-family: 'Arial', sans-serif; font-weight: bold; margin-top: 5px; margin-bottom: 0px; font-size: 24px;}
+    h1 { color: #00732f; text-align: center; font-family: 'Arial', sans-serif; font-weight: bold; margin-top: 10px; margin-bottom: 0px; font-size: 24px;}
     h2 { text-align: center; color: #333; margin-bottom: 10px; margin-top: 0px; font-size: 16px;}
     
     /* النصوص */
@@ -76,23 +76,23 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- RENDER UI ---
-# عرض صورة الغلاف
+# عرض صورة الغلاف (GIF)
 try:
-    st.image("intro.png", use_container_width=True)
+    # هنا قمنا بتغيير الامتداد إلى gif
+    st.image("intro.gif", use_container_width=True)
 except Exception:
-    st.warning("⚠️ لم يتم العثور على صورة الغلاف 'intro.png'.")
+    st.warning("⚠️ لم يتم العثور على صورة الغلاف 'intro.gif'. يرجى التأكد من رفعها.")
 
 # العناوين
 st.markdown("<h1>🤖 زايد - صديق اليوم الوطني 55</h1>", unsafe_allow_html=True)
 st.markdown("<h2>Zayed - National Day 55 Buddy</h2>", unsafe_allow_html=True)
 
-# عرض الـ QR في المنتصف (بدون أعمدة جانبية لضمان وضوحه)
+# عرض الـ QR في المنتصف لضمان وضوحه
 st.markdown("<p style='text-align: center; font-size: 16px; font-weight: bold; color: #00732f; margin-bottom: 5px; margin-top: 10px;'>📱 Scan to try on your phone</p>", unsafe_allow_html=True)
 
 col_qr1, col_qr2, col_qr3 = st.columns([1, 1, 1])
 with col_qr2:
     try:
-        # عرض الصورة بحجم مناسب وواضح
         st.image("qr_code.png", use_container_width=True)
     except Exception:
         st.warning("QR Code image not found.")
