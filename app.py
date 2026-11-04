@@ -23,24 +23,39 @@ st.set_page_config(page_title="Zayed Robot", page_icon="🇦🇪🤖", layout="c
 # --- CUSTOM CSS ---
 st.markdown("""
     <style>
+    /* إخفاء الهوامش العلوية الافتراضية لتبدو الصورة كغلاف */
+    .block-container {
+        padding-top: 1rem;
+        padding-bottom: 0rem;
+        padding-left: 0rem;
+        padding-right: 0rem;
+    }
+    
     .stApp { background-color: #f8f9fa; }
+    
+    /* تنسيق شريط علم الإمارات */
     .uae-border {
-        height: 10px;
+        height: 8px;
         background: linear-gradient(to right, #00732f 33%, #ffffff 33%, #ffffff 66%, #000000 66%);
         border-top: 5px solid #ff0000;
-        margin-bottom: 30px;
-        border-radius: 5px;
+        margin-bottom: 20px;
     }
-    h1 { color: #00732f; text-align: center; font-family: 'Arial', sans-serif; font-weight: bold; }
+    
+    /* تنسيق العناوين */
+    h1 { color: #00732f; text-align: center; font-family: 'Arial', sans-serif; font-weight: bold; margin-top: 10px;}
+    h2 { text-align: center; color: #333; margin-bottom: 30px; }
+    
+    /* تنسيق بطاقة الـ QR */
     .qr-card {
         background-color: white; padding: 20px; border-radius: 15px;
         box-shadow: 0 4px 8px rgba(0,0,0,0.1); text-align: center;
         margin: 20px auto; max-width: 300px;
     }
+    
     .arabic-text { text-align: center; font-size: 24px; color: #333; direction: rtl; font-family: 'Tahoma', sans-serif; margin-bottom: 5px; font-weight: bold;}
     .english-text { text-align: center; font-size: 18px; color: #666; margin-bottom: 20px; }
     
-    /* --- Make the microphone bigger and add a glow --- */
+    /* تكبير زر المايكروفون */
     div[data-testid="stAudioRecorder"] button {
         transform: scale(1.8);
         margin: 30px 0px;
@@ -48,7 +63,7 @@ st.markdown("""
         border: 2px solid #00732f;
     }
 
-    /* --- ANIMATION FOR THINKING --- */
+    /* تأثير الرسوم المتحركة للانتظار */
     @keyframes pulse {
         0% { opacity: 0.6; }
         50% { opacity: 1; }
@@ -62,15 +77,26 @@ st.markdown("""
         margin-top: 20px;
     }
     
+    /* إخفاء عناصر Streamlit الافتراضية */
     header {visibility: hidden;} footer {visibility: hidden;} #MainMenu {visibility: hidden;}
     </style>
 """, unsafe_allow_html=True)
 
 # --- RENDER UI ---
-st.markdown("<div class='uae-border'></div>", unsafe_allow_html=True)
-st.markdown("<h1>🤖 زايد - صديق اليوم الوطني 55</h1>", unsafe_allow_html=True)
-st.markdown("<h2 style='text-align: center; color: #333;'>Zayed - National Day 55 Buddy</h2>", unsafe_allow_html=True)
+# عرض صورة الغلاف (Intro) بعرض الشاشة بالكامل
+try:
+    st.image("intro.png", use_container_width=True)
+except Exception:
+    st.warning("⚠️ لم يتم العثور على صورة الغلاف 'intro.png'. يرجى التأكد من رفعها.")
 
+# عرض شريط علم الإمارات أسفل الصورة
+st.markdown("<div class='uae-border'></div>", unsafe_allow_html=True)
+
+# العناوين الرئيسية
+st.markdown("<h1>🤖 زايد - صديق اليوم الوطني 55</h1>", unsafe_allow_html=True)
+st.markdown("<h2>Zayed - National Day 55 Buddy</h2>", unsafe_allow_html=True)
+
+# بطاقة رمز الـ QR
 st.markdown("""
     <div class='qr-card'>
         <p style='font-size: 16px; font-weight: bold; color: #00732f;'>📱 Scan to try on your phone</p>
@@ -94,7 +120,7 @@ client = Groq(api_key=GROQ_API_KEY)
 # --- ROBOT'S PERSONALITY ---
 SYSTEM_PROMPT = """
 You are "Zayed" (زايد), a very friendly and welcoming robot at a UAE 55th National Day school exhibition. 
-When you introduce yourself, you should say something like: "أنا زايد، الروبوت الودود" (I am Zayed, the friendly robot).
+When you introduce yourself, you should say something like: "أنا زايد، روبوت الذكاء الاصطناعي" (I am Zayed, the AI robot).
 Your job is to answer parents' questions.
 You MUST follow these rules strictly:
 1. If the user speaks Arabic, reply in Arabic.
@@ -102,7 +128,7 @@ You MUST follow these rules strictly:
 3. Provide a detailed, warm, and engaging answer (about 2 to 3 sentences). Elaborate on the facts to make it interesting for the parents.
 4. Remember these facts:
    - Your name is Zayed. You are named in honor of the late Sheikh Zayed bin Sultan Al Nahyan, the founding father of the UAE.
-   - The school hosting this exhibition is "مدرسة الظاهر للشراكات التعليمية" (Al Dhahir charter school).
+   - The school hosting this exhibition is "مدرسة الظاهر للشراكات التعليمية" (Al Dhaher charter school).
    - The UAE 55th National Day is on December 2nd, 2026.
    - This exhibition showcases student projects in Artificial Intelligence.
    - You are built using Python and AI by a brilliant student from this school.
@@ -111,7 +137,6 @@ You MUST follow these rules strictly:
 # --- HELPER FUNCTIONS ---
 
 def transcribe_audio_groq(audio_bytes):
-    """Transcribes audio using Groq's fast Whisper model."""
     temp_file = "temp_audio.wav"
     with open(temp_file, "wb") as f:
         f.write(audio_bytes)
@@ -122,7 +147,7 @@ def transcribe_audio_groq(audio_bytes):
                 file=(temp_file, file.read()),
                 model="whisper-large-v3-turbo",
                 response_format="text",
-                language=None # Auto-detect
+                language=None
             )
         text = transcription.strip() if isinstance(transcription, str) else transcription.text.strip()
     except Exception as e:
@@ -132,7 +157,6 @@ def transcribe_audio_groq(audio_bytes):
         if os.path.exists(temp_file):
             os.remove(temp_file)
     
-    # Simple language detection based on characters
     if text:
         lang = "ar" if any('\u0600' <= c <= '\u06FF' for c in text) else "en"
     else:
@@ -140,7 +164,6 @@ def transcribe_audio_groq(audio_bytes):
     return text, lang
 
 def get_ai_response_stream(user_text):
-    """Yields chunks of the AI response for streaming."""
     stream = client.chat.completions.create(
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
@@ -156,13 +179,11 @@ def get_ai_response_stream(user_text):
             yield chunk.choices[0].delta.content
 
 async def generate_tts(text, lang):
-    """Generates an MP3 file using Microsoft Edge TTS."""
     if lang == "ar":
         voice = "ar-AE-HamdanNeural" 
     else:
         voice = "en-US-GuyNeural"    
     output_file = "response_audio.mp3"
-    # Slightly faster rate (+15%) for exhibition energy
     communicate = edge_tts.Communicate(text, voice, volume="+100%", rate="+15%")
     await communicate.save(output_file)
     return output_file
