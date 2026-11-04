@@ -23,35 +23,40 @@ st.set_page_config(page_title="Zayed Robot", page_icon="🇦🇪🤖", layout="c
 # --- CUSTOM CSS ---
 st.markdown("""
     <style>
-    /* إخفاء الهوامش العلوية الافتراضية لتبدو الصورة كغلاف */
+    /* تقليل الهوامش الافتراضية للصفحة بالكامل */
     .block-container {
-        padding-top: 1rem;
+        padding-top: 0rem;
         padding-bottom: 0rem;
-        padding-left: 0rem;
-        padding-right: 0rem;
+        padding-left: 1rem;
+        padding-right: 1rem;
     }
     
     .stApp { background-color: #f8f9fa; }
     
+    /* تقليل المسافات بين جميع العناصر الرأسية في Streamlit */
+    div[data-testid="stVerticalBlock"] > div {
+        gap: 0.5rem; /* تقليل الفراغ بين العناصر */
+    }
+
     /* تنسيق العناوين */
-    h1 { color: #00732f; text-align: center; font-family: 'Arial', sans-serif; font-weight: bold; margin-top: 10px;}
-    h2 { text-align: center; color: #333; margin-bottom: 10px; }
+    h1 { color: #00732f; text-align: center; font-family: 'Arial', sans-serif; font-weight: bold; margin-top: 5px; margin-bottom: 5px;}
+    h2 { text-align: center; color: #333; margin-bottom: 10px; margin-top: 0px;}
     
-    /* تنسيق بطاقة الـ QR (أصبحت أصغر وأكثر تقارباً) */
+    /* تنسيق بطاقة الـ QR */
     .qr-card {
-        background-color: white; padding: 10px; border-radius: 10px;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1); text-align: center;
-        margin: 10px auto; max-width: 250px;
+        background-color: white; padding: 8px; border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;
+        margin: 5px auto; max-width: 200px;
     }
     
-    .arabic-text { text-align: center; font-size: 22px; color: #333; direction: rtl; font-family: 'Tahoma', sans-serif; margin-bottom: 5px; font-weight: bold;}
-    .english-text { text-align: center; font-size: 16px; color: #666; margin-bottom: 10px; }
+    .arabic-text { text-align: center; font-size: 20px; color: #333; direction: rtl; font-family: 'Tahoma', sans-serif; margin-bottom: 0px; font-weight: bold;}
+    .english-text { text-align: center; font-size: 14px; color: #666; margin-bottom: 10px; }
     
-    /* تكبير زر المايكروفون */
+    /* تكبير زر المايكروفون وتقليل المسافة حوله */
     div[data-testid="stAudioRecorder"] button {
-        transform: scale(1.8);
-        margin: 10px 0px; /* تقليل المسافة حول المايك */
-        box-shadow: 0 0 20px rgba(0, 115, 47, 0.4);
+        transform: scale(1.5);
+        margin: 5px 0px;
+        box-shadow: 0 0 15px rgba(0, 115, 47, 0.4);
         border: 2px solid #00732f;
     }
 
@@ -63,10 +68,10 @@ st.markdown("""
     }
     .thinking-animation {
         text-align: center;
-        font-size: 20px;
+        font-size: 18px;
         color: #00732f;
         animation: pulse 1.5s infinite;
-        margin-top: 20px;
+        margin-top: 10px;
     }
     
     /* إخفاء عناصر Streamlit الافتراضية */
@@ -75,30 +80,31 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- RENDER UI ---
-# عرض صورة الغلاف (Intro) بعرض الشاشة بالكامل
+# عرض صورة الغلاف
 try:
     st.image("intro.png", use_container_width=True)
 except Exception:
-    st.warning("⚠️ لم يتم العثور على صورة الغلاف 'intro.png'. يرجى التأكد من رفعها.")
+    st.warning("⚠️ لم يتم العثور على صورة الغلاف 'intro.png'.")
 
-# العناوين الرئيسية
-st.markdown("<h1>🤖 زايد - صديق اليوم الوطني 55</h1>", unsafe_allow_html=True)
-st.markdown("<h2>Zayed - National Day 55 Buddy</h2>", unsafe_allow_html=True)
+# استخدام حاوية لتجميع العناصر معاً
+with st.container():
+    st.markdown("<h1>🤖 زايد - صديق اليوم الوطني 55</h1>", unsafe_allow_html=True)
+    st.markdown("<h2>Zayed - National Day 55 Buddy</h2>", unsafe_allow_html=True)
 
-# بطاقة رمز الـ QR (تم رفعها لتكون فوق المايك مباشرة)
-st.markdown("""
-    <div class='qr-card'>
-        <p style='font-size: 14px; font-weight: bold; color: #00732f; margin: 0;'>📱 Scan to try on your phone</p>
-    </div>
-""", unsafe_allow_html=True)
+    # بطاقة رمز الـ QR
+    st.markdown("""
+        <div class='qr-card'>
+            <p style='font-size: 14px; font-weight: bold; color: #00732f; margin: 0;'>📱 Scan to try on your phone</p>
+        </div>
+    """, unsafe_allow_html=True)
 
-col_qr1, col_qr2, col_qr3 = st.columns([1, 1, 1])
-with col_qr2:
-    try:
-        # تصغير حجم QR ليكون أنيقاً
-        st.image("qr_code.png", use_container_width=True)
-    except Exception:
-        st.warning("QR Code image not found.")
+    col_qr1, col_qr2, col_qr3 = st.columns([1, 1, 1])
+    with col_qr2:
+        try:
+            # تصغير حجم QR
+            st.image("qr_code.png", use_container_width=True)
+        except Exception:
+            st.warning("QR Code image not found.")
 
 # --- INITIALIZE GROQ ---
 if not GROQ_API_KEY:
