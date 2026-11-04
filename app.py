@@ -30,23 +30,26 @@ st.markdown("""
         margin-bottom: 30px;
         border-radius: 5px;
     }
-    h1 { color: #00732f; text-align: center; font-family: 'Arial', sans-serif; font-weight: bold; }
+    
+    /* Fixed Title RTL */
+    h1 { 
+        color: #00732f; 
+        text-align: center; 
+        font-family: 'Tahoma', sans-serif; 
+        font-weight: bold;
+        direction: rtl;
+    }
+    
     .qr-card {
         background-color: white; padding: 20px; border-radius: 15px;
         box-shadow: 0 4px 8px rgba(0,0,0,0.1); text-align: center;
         margin: 20px auto; max-width: 300px;
     }
+    
     .arabic-text { text-align: center; font-size: 24px; color: #333; direction: rtl; font-family: 'Tahoma', sans-serif; margin-bottom: 5px; font-weight: bold;}
     .english-text { text-align: center; font-size: 18px; color: #666; margin-bottom: 20px; }
     
-    /* --- NEW: Make the microphone bigger and add a glow --- */
-    div[data-testid="stAudioRecorder"] button {
-        transform: scale(1.8); /* Makes the button 1.8x larger */
-        margin: 30px 0px;      /* Adds space around the button */
-        box-shadow: 0 0 20px rgba(0, 115, 47, 0.4); /* Green glow */
-        border: 2px solid #00732f;
-    }
-    
+    /* Removed the problematic transform scale from the button */
     header {visibility: hidden;} footer {visibility: hidden;} #MainMenu {visibility: hidden;}
     </style>
 """, unsafe_allow_html=True)
@@ -76,7 +79,6 @@ if not GROQ_API_KEY:
     
 client = Groq(api_key=GROQ_API_KEY)
 
-# --- ROBOT'S PERSONALITY ---
 # --- ROBOT'S PERSONALITY ---
 SYSTEM_PROMPT = """
 You are a friendly, intelligent robot named "Zayed" (زايد). You are at a school exhibition for the UAE 55th National Day.
@@ -147,12 +149,13 @@ st.markdown("<p class='english-text'>👇 Press the microphone and talk to Zayed
 
 col_mic1, col_mic2, col_mic3 = st.columns([1, 1, 1])
 with col_mic2:
+    # Using icon_size to make it bigger instead of CSS transform
     audio_bytes = audio_recorder(
-        text="", # Leave text empty because we added custom text above
+        text="", 
         recording_color="#ff0000",
         neutral_color="#00732f",
         icon_name="microphone",
-        icon_size="3x",
+        icon_size="4x", # Increased from 3x to 4x for better visibility
     )
 
 # --- WAKE WORD LOGIC ---
