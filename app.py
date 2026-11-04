@@ -20,7 +20,7 @@ except Exception:
 # --- UI SETUP ---
 st.set_page_config(page_title="Zayed Robot", page_icon="🇦🇪🤖", layout="centered")
 
-# --- CUSTOM CSS (AGGRESSIVE SPACING FIX) ---
+# --- CUSTOM CSS ---
 st.markdown("""
     <style>
     /* 1. إزالة الهوامش العلوية والسفلية للصفحة بالكامل */
@@ -29,46 +29,42 @@ st.markdown("""
         padding-bottom: 0rem !important;
         padding-left: 1rem !important;
         padding-right: 1rem !important;
-        margin-top: -3rem !important; /* سحب المحتوى للأعلى */
+        margin-top: -3rem !important; 
     }
     
     .stApp { background-color: #ffffff; }
     
-    /* 2. تصفير المسافات بين العناصر الرأسية */
+    /* 2. تصفير المسافات بين العناصر */
     div[data-testid="stVerticalBlock"] > div {
         gap: 0rem !important; 
         padding-bottom: 0rem !important;
     }
 
-    /* 3. إزالة المسافة أسفل الصورة مباشرة (هنا المشكلة الرئيسية) */
+    /* 3. إزالة المسافة أسفل الصورة */
     div[data-testid="stImage"] {
         margin-bottom: -20px !important; 
         padding-bottom: 0px !important;
         line-height: 0 !important;
     }
 
-    /* 4. تصغير العناوين وجعلها واضحة جداً */
-    h1 { 
-        color: #00732f !important; 
-        text-align: center; 
-        font-family: 'Arial', sans-serif; 
-        font-weight: bold; 
-        margin-top: 5px !important; 
-        margin-bottom: 0px !important; 
-        font-size: 22px !important;
-    }
-    h2 { 
-        text-align: center; 
-        color: #333 !important; 
-        margin-bottom: 15px !important; 
-        margin-top: 0px !important; 
-        font-size: 16px !important;
-    }
+    /* 4. العناوين */
+    h1 { color: #00732f !important; text-align: center; font-family: 'Arial', sans-serif; font-weight: bold; margin-top: 5px !important; margin-bottom: 0px !important; font-size: 22px !important;}
+    h2 { text-align: center; color: #333 !important; margin-bottom: 15px !important; margin-top: 0px !important; font-size: 16px !important;}
     
     /* النصوص */
     .arabic-text { text-align: center; font-size: 18px; color: #333; direction: rtl; font-family: 'Tahoma', sans-serif; margin-bottom: 0px; margin-top: 10px; font-weight: bold;}
     .english-text { text-align: center; font-size: 14px; color: #666; margin-bottom: 5px; }
     
+    /* 5. إزالة المربع الأسود حول زر المايكروفون */
+    div[data-testid="stAudioRecorder"] {
+        background-color: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+    div[data-testid="stAudioRecorder"] > div {
+        background-color: transparent !important;
+    }
+
     /* تكبير زر المايكروفون */
     div[data-testid="stAudioRecorder"] button {
         transform: scale(1.5);
@@ -76,6 +72,7 @@ st.markdown("""
         display: block;
         box-shadow: 0 0 15px rgba(0, 115, 47, 0.4);
         border: 2px solid #00732f;
+        background-color: #ffffff !important; /* جعل خلفية الزر بيضاء */
     }
 
     /* تأثير الرسوم المتحركة */
@@ -99,17 +96,14 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- RENDER UI ---
-# عرض صورة الغلاف (GIF)
 try:
     st.image("intro.gif", use_container_width=True)
 except Exception:
     st.warning("⚠️ لم يتم العثور على صورة الغلاف 'intro.gif'. يرجى التأكد من رفعها.")
 
-# العناوين
 st.markdown("<h1>🤖 زايد - صديق اليوم الوطني 55</h1>", unsafe_allow_html=True)
 st.markdown("<h2>Zayed - National Day 55 Buddy</h2>", unsafe_allow_html=True)
 
-# عرض الـ QR في المنتصف
 st.markdown("<p style='text-align: center; font-size: 16px; font-weight: bold; color: #00732f; margin-bottom: 5px; margin-top: 10px;'>📱 Scan to try on your phone</p>", unsafe_allow_html=True)
 
 col_qr1, col_qr2, col_qr3 = st.columns([1, 1, 1])
@@ -119,7 +113,6 @@ with col_qr2:
     except Exception:
         st.warning("QR Code image not found.")
 
-# المايكروفون
 st.markdown("<p class='arabic-text'>👇 تحدث مع زايد</p>", unsafe_allow_html=True)
 st.markdown("<p class='english-text'>👇 Talk to Zayed</p>", unsafe_allow_html=True)
 
