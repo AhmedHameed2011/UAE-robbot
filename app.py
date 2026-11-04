@@ -1,4 +1,4 @@
-import streamlit as st
+يimport streamlit as st
 import edge_tts
 import asyncio
 import os
@@ -33,32 +33,24 @@ st.markdown("""
     
     .stApp { background-color: #f8f9fa; }
     
-    /* تنسيق شريط علم الإمارات */
-    .uae-border {
-        height: 8px;
-        background: linear-gradient(to right, #00732f 33%, #ffffff 33%, #ffffff 66%, #000000 66%);
-        border-top: 5px solid #ff0000;
-        margin-bottom: 20px;
-    }
-    
     /* تنسيق العناوين */
     h1 { color: #00732f; text-align: center; font-family: 'Arial', sans-serif; font-weight: bold; margin-top: 10px;}
-    h2 { text-align: center; color: #333; margin-bottom: 30px; }
+    h2 { text-align: center; color: #333; margin-bottom: 10px; }
     
-    /* تنسيق بطاقة الـ QR */
+    /* تنسيق بطاقة الـ QR (أصبحت أصغر وأكثر تقارباً) */
     .qr-card {
-        background-color: white; padding: 20px; border-radius: 15px;
+        background-color: white; padding: 10px; border-radius: 10px;
         box-shadow: 0 4px 8px rgba(0,0,0,0.1); text-align: center;
-        margin: 20px auto; max-width: 300px;
+        margin: 10px auto; max-width: 250px;
     }
     
-    .arabic-text { text-align: center; font-size: 24px; color: #333; direction: rtl; font-family: 'Tahoma', sans-serif; margin-bottom: 5px; font-weight: bold;}
-    .english-text { text-align: center; font-size: 18px; color: #666; margin-bottom: 20px; }
+    .arabic-text { text-align: center; font-size: 22px; color: #333; direction: rtl; font-family: 'Tahoma', sans-serif; margin-bottom: 5px; font-weight: bold;}
+    .english-text { text-align: center; font-size: 16px; color: #666; margin-bottom: 10px; }
     
     /* تكبير زر المايكروفون */
     div[data-testid="stAudioRecorder"] button {
         transform: scale(1.8);
-        margin: 30px 0px;
+        margin: 10px 0px; /* تقليل المسافة حول المايك */
         box-shadow: 0 0 20px rgba(0, 115, 47, 0.4);
         border: 2px solid #00732f;
     }
@@ -89,23 +81,21 @@ try:
 except Exception:
     st.warning("⚠️ لم يتم العثور على صورة الغلاف 'intro.png'. يرجى التأكد من رفعها.")
 
-# عرض شريط علم الإمارات أسفل الصورة
-st.markdown("<div class='uae-border'></div>", unsafe_allow_html=True)
-
 # العناوين الرئيسية
 st.markdown("<h1>🤖 زايد - صديق اليوم الوطني 55</h1>", unsafe_allow_html=True)
 st.markdown("<h2>Zayed - National Day 55 Buddy</h2>", unsafe_allow_html=True)
 
-# بطاقة رمز الـ QR
+# بطاقة رمز الـ QR (تم رفعها لتكون فوق المايك مباشرة)
 st.markdown("""
     <div class='qr-card'>
-        <p style='font-size: 16px; font-weight: bold; color: #00732f;'>📱 Scan to try on your phone</p>
+        <p style='font-size: 14px; font-weight: bold; color: #00732f; margin: 0;'>📱 Scan to try on your phone</p>
     </div>
 """, unsafe_allow_html=True)
 
-col1, col2, col3 = st.columns([1, 1, 1])
-with col2:
+col_qr1, col_qr2, col_qr3 = st.columns([1, 1, 1])
+with col_qr2:
     try:
+        # تصغير حجم QR ليكون أنيقاً
         st.image("qr_code.png", use_container_width=True)
     except Exception:
         st.warning("QR Code image not found.")
@@ -206,14 +196,12 @@ with col_mic2:
 
 # --- RESPONSE LOGIC (No Wake Word Required, Fixed Loop) ---
 if audio_bytes:
-    # 1. Create placeholders for all dynamic elements
     listen_placeholder = st.empty()
     user_text_placeholder = st.empty()
     ai_text_placeholder = st.empty()
     audio_placeholder = st.empty()
     status_placeholder = st.empty()
 
-    # 2. Listening State
     listen_placeholder.markdown("<div class='thinking-animation'>🎤 زايد يستمع إليك... / Zayed is listening...</div>", unsafe_allow_html=True)
     user_text, detected_lang = transcribe_audio_groq(audio_bytes)
     listen_placeholder.empty() 
@@ -221,7 +209,6 @@ if audio_bytes:
     if user_text:
         user_text_placeholder.success(f"**You said / قلت:** {user_text}")
         
-        # 3. Thinking State (Streaming)
         status_placeholder.markdown("<div class='thinking-animation'>🧠 زايد يفكر... / Zayed is thinking...</div>", unsafe_allow_html=True)
         
         with ai_text_placeholder.container():
@@ -229,16 +216,14 @@ if audio_bytes:
             
         status_placeholder.empty() 
         
-        # 4. Speaking State
         status_placeholder.markdown("<div class='thinking-animation'>🔊 زايد يتحدث... / Zayed is speaking...</div>", unsafe_allow_html=True)
         
         audio_file = asyncio.run(generate_tts(response_text, detected_lang))
         
-        # Calculate audio length to know how long to wait
         try:
             audio_length = MP3(audio_file).info.length
         except Exception:
-            audio_length = 5 # fallback if mutagen fails
+            audio_length = 5 
             
         with audio_placeholder.container():
             with open(audio_file, "rb") as f:
@@ -247,16 +232,13 @@ if audio_bytes:
         os.remove(audio_file)
         status_placeholder.empty()
         
-        # 5. Wait for the audio to finish playing (add 1.5s buffer)
         time.sleep(audio_length + 1.5) 
         
-        # 6. Clear all placeholders so the screen is clean for the next user
         user_text_placeholder.empty()
         ai_text_placeholder.empty()
         audio_placeholder.empty()
         status_placeholder.empty()
         
-        # 7. CRITICAL FIX: Clear the audio from memory so it doesn't loop
         if "audio_recorder" in st.session_state:
             del st.session_state["audio_recorder"]
             
@@ -265,7 +247,5 @@ if audio_bytes:
         user_text_placeholder.error("Sorry, I couldn't understand. Please try again. / عذراً، لم أفهم. حاول مرة أخرى.")
         time.sleep(2)
         user_text_placeholder.empty()
-        
-        # Clear audio memory even on failure so it doesn't loop
         if "audio_recorder" in st.session_state:
             del st.session_state["audio_recorder"]
