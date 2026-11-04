@@ -23,39 +23,40 @@ st.set_page_config(page_title="Zayed Robot", page_icon="🇦🇪🤖", layout="c
 # --- CUSTOM CSS ---
 st.markdown("""
     <style>
-    /* تقليل الهوامش الافتراضية للصفحة بالكامل */
+    /* إزالة جميع الهوامش العلوية والسفلية الافتراضية */
     .block-container {
-        padding-top: 0rem;
-        padding-bottom: 0rem;
+        padding-top: 0rem !important;
+        padding-bottom: 0rem !important;
         padding-left: 1rem;
         padding-right: 1rem;
+        margin-top: -2rem; /* سحب المحتوى للأعلى */
     }
     
     .stApp { background-color: #f8f9fa; }
     
-    /* تقليل المسافات بين جميع العناصر الرأسية في Streamlit */
+    /* إزالة أي فراغات بين العناصر */
     div[data-testid="stVerticalBlock"] > div {
-        gap: 0.5rem; /* تقليل الفراغ بين العناصر */
+        gap: 0rem !important; 
     }
 
     /* تنسيق العناوين */
-    h1 { color: #00732f; text-align: center; font-family: 'Arial', sans-serif; font-weight: bold; margin-top: 5px; margin-bottom: 5px;}
-    h2 { text-align: center; color: #333; margin-bottom: 10px; margin-top: 0px;}
+    h1 { color: #00732f; text-align: center; font-family: 'Arial', sans-serif; font-weight: bold; margin-top: 0px; margin-bottom: 0px; font-size: 28px;}
+    h2 { text-align: center; color: #333; margin-bottom: 5px; margin-top: 0px; font-size: 18px;}
     
     /* تنسيق بطاقة الـ QR */
     .qr-card {
-        background-color: white; padding: 8px; border-radius: 10px;
+        background-color: white; padding: 5px; border-radius: 10px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;
         margin: 5px auto; max-width: 200px;
     }
     
-    .arabic-text { text-align: center; font-size: 20px; color: #333; direction: rtl; font-family: 'Tahoma', sans-serif; margin-bottom: 0px; font-weight: bold;}
-    .english-text { text-align: center; font-size: 14px; color: #666; margin-bottom: 10px; }
+    .arabic-text { text-align: center; font-size: 18px; color: #333; direction: rtl; font-family: 'Tahoma', sans-serif; margin-bottom: 0px; margin-top: 5px; font-weight: bold;}
+    .english-text { text-align: center; font-size: 14px; color: #666; margin-bottom: 0px; }
     
-    /* تكبير زر المايكروفون وتقليل المسافة حوله */
+    /* تكبير زر المايكروفون */
     div[data-testid="stAudioRecorder"] button {
-        transform: scale(1.5);
-        margin: 5px 0px;
+        transform: scale(1.4);
+        margin: 0px;
         box-shadow: 0 0 15px rgba(0, 115, 47, 0.4);
         border: 2px solid #00732f;
     }
@@ -68,10 +69,10 @@ st.markdown("""
     }
     .thinking-animation {
         text-align: center;
-        font-size: 18px;
+        font-size: 16px;
         color: #00732f;
         animation: pulse 1.5s infinite;
-        margin-top: 10px;
+        margin-top: 5px;
     }
     
     /* إخفاء عناصر Streamlit الافتراضية */
@@ -80,8 +81,18 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- RENDER UI ---
-# عرض صورة الغلاف
+# عرض صورة الغلاف مع "قص" الجزء السفلي منها لتقليل المسافة
 try:
+    st.markdown("""
+        <style>
+        /* هذا الكود يقوم بقص الجزء السفلي من الصورة (20%) لإزالة الفراغ الأبيض بداخلها */
+        div[data-testid="stImage"] img {
+            object-fit: cover;
+            object-position: top;
+            aspect-ratio: 2.5 / 1; /* تغيير النسبة لقص الجزء السفلي */
+        }
+        </style>
+    """, unsafe_allow_html=True)
     st.image("intro.png", use_container_width=True)
 except Exception:
     st.warning("⚠️ لم يتم العثور على صورة الغلاف 'intro.png'.")
@@ -91,20 +102,31 @@ with st.container():
     st.markdown("<h1>🤖 زايد - صديق اليوم الوطني 55</h1>", unsafe_allow_html=True)
     st.markdown("<h2>Zayed - National Day 55 Buddy</h2>", unsafe_allow_html=True)
 
-    # بطاقة رمز الـ QR
-    st.markdown("""
-        <div class='qr-card'>
-            <p style='font-size: 14px; font-weight: bold; color: #00732f; margin: 0;'>📱 Scan to try on your phone</p>
-        </div>
-    """, unsafe_allow_html=True)
+    # استخدام الأعمدة لوضع الـ QR والمايك بجانب بعضهما أو متقاربين جداً
+    col_qr, col_mic = st.columns([1, 1])
 
-    col_qr1, col_qr2, col_qr3 = st.columns([1, 1, 1])
-    with col_qr2:
+    with col_qr:
+        st.markdown("""
+            <div class='qr-card'>
+                <p style='font-size: 12px; font-weight: bold; color: #00732f; margin: 0;'>📱 Scan to try</p>
+            </div>
+        """, unsafe_allow_html=True)
         try:
-            # تصغير حجم QR
             st.image("qr_code.png", use_container_width=True)
         except Exception:
-            st.warning("QR Code image not found.")
+            st.warning("QR Code not found.")
+
+    with col_mic:
+        st.markdown("<p class='arabic-text' style='margin-top: 20px;'>👇 تحدث مع زايد</p>", unsafe_allow_html=True)
+        st.markdown("<p class='english-text'>👇 Talk to Zayed</p>", unsafe_allow_html=True)
+        
+        audio_bytes = audio_recorder(
+            text="",
+            recording_color="#ff0000",
+            neutral_color="#00732f",
+            icon_name="microphone",
+            icon_size="2x",
+        )
 
 # --- INITIALIZE GROQ ---
 if not GROQ_API_KEY:
@@ -185,22 +207,10 @@ async def generate_tts(text, lang):
     return output_file
 
 # --- MAIN APP LOGIC ---
-st.write("---") 
+# إضافة خط فاصل رفيع جداً
+st.markdown("<hr style='margin: 5px 0px; border: 0.5px solid #ddd;'>", unsafe_allow_html=True)
 
-st.markdown("<p class='arabic-text'>👇 اضغط على المايكروفون وتحدث مع زايد</p>", unsafe_allow_html=True)
-st.markdown("<p class='english-text'>👇 Press the microphone and talk to Zayed</p>", unsafe_allow_html=True)
-
-col_mic1, col_mic2, col_mic3 = st.columns([1, 1, 1])
-with col_mic2:
-    audio_bytes = audio_recorder(
-        text="",
-        recording_color="#ff0000",
-        neutral_color="#00732f",
-        icon_name="microphone",
-        icon_size="3x",
-    )
-
-# --- RESPONSE LOGIC (No Wake Word Required, Fixed Loop) ---
+# --- RESPONSE LOGIC ---
 if audio_bytes:
     listen_placeholder = st.empty()
     user_text_placeholder = st.empty()
@@ -208,7 +218,7 @@ if audio_bytes:
     audio_placeholder = st.empty()
     status_placeholder = st.empty()
 
-    listen_placeholder.markdown("<div class='thinking-animation'>🎤 زايد يستمع إليك... / Zayed is listening...</div>", unsafe_allow_html=True)
+    listen_placeholder.markdown("<div class='thinking-animation'>🎤 زايد يستمع... / Zayed is listening...</div>", unsafe_allow_html=True)
     user_text, detected_lang = transcribe_audio_groq(audio_bytes)
     listen_placeholder.empty() 
     
@@ -250,7 +260,7 @@ if audio_bytes:
             
     else:
         listen_placeholder.empty()
-        user_text_placeholder.error("Sorry, I couldn't understand. Please try again. / عذراً، لم أفهم. حاول مرة أخرى.")
+        user_text_placeholder.error("Sorry, I couldn't understand. Please try again.")
         time.sleep(2)
         user_text_placeholder.empty()
         if "audio_recorder" in st.session_state:
