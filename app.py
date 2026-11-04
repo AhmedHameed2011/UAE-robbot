@@ -20,27 +20,50 @@ except Exception:
 # --- UI SETUP ---
 st.set_page_config(page_title="Zayed Robot", page_icon="🇦🇪🤖", layout="centered")
 
-# --- CUSTOM CSS ---
+# --- CUSTOM CSS (AGGRESSIVE SPACING FIX) ---
 st.markdown("""
     <style>
-    /* إزالة الهوامش الافتراضية للصفحة بالكامل */
+    /* 1. إزالة الهوامش العلوية والسفلية للصفحة بالكامل */
     .block-container {
         padding-top: 0rem !important;
         padding-bottom: 0rem !important;
         padding-left: 1rem !important;
         padding-right: 1rem !important;
+        margin-top: -3rem !important; /* سحب المحتوى للأعلى */
     }
     
     .stApp { background-color: #ffffff; }
     
-    /* تقليل المسافات بين العناصر بشكل آمن */
+    /* 2. تصفير المسافات بين العناصر الرأسية */
     div[data-testid="stVerticalBlock"] > div {
-        gap: 0.3rem !important; 
+        gap: 0rem !important; 
+        padding-bottom: 0rem !important;
     }
 
-    /* العناوين */
-    h1 { color: #00732f; text-align: center; font-family: 'Arial', sans-serif; font-weight: bold; margin-top: 10px; margin-bottom: 0px; font-size: 24px;}
-    h2 { text-align: center; color: #333; margin-bottom: 10px; margin-top: 0px; font-size: 16px;}
+    /* 3. إزالة المسافة أسفل الصورة مباشرة (هنا المشكلة الرئيسية) */
+    div[data-testid="stImage"] {
+        margin-bottom: -20px !important; 
+        padding-bottom: 0px !important;
+        line-height: 0 !important;
+    }
+
+    /* 4. تصغير العناوين وجعلها واضحة جداً */
+    h1 { 
+        color: #00732f !important; 
+        text-align: center; 
+        font-family: 'Arial', sans-serif; 
+        font-weight: bold; 
+        margin-top: 5px !important; 
+        margin-bottom: 0px !important; 
+        font-size: 22px !important;
+    }
+    h2 { 
+        text-align: center; 
+        color: #333 !important; 
+        margin-bottom: 15px !important; 
+        margin-top: 0px !important; 
+        font-size: 16px !important;
+    }
     
     /* النصوص */
     .arabic-text { text-align: center; font-size: 18px; color: #333; direction: rtl; font-family: 'Tahoma', sans-serif; margin-bottom: 0px; margin-top: 10px; font-weight: bold;}
@@ -78,7 +101,6 @@ st.markdown("""
 # --- RENDER UI ---
 # عرض صورة الغلاف (GIF)
 try:
-    # هنا قمنا بتغيير الامتداد إلى gif
     st.image("intro.gif", use_container_width=True)
 except Exception:
     st.warning("⚠️ لم يتم العثور على صورة الغلاف 'intro.gif'. يرجى التأكد من رفعها.")
@@ -87,7 +109,7 @@ except Exception:
 st.markdown("<h1>🤖 زايد - صديق اليوم الوطني 55</h1>", unsafe_allow_html=True)
 st.markdown("<h2>Zayed - National Day 55 Buddy</h2>", unsafe_allow_html=True)
 
-# عرض الـ QR في المنتصف لضمان وضوحه
+# عرض الـ QR في المنتصف
 st.markdown("<p style='text-align: center; font-size: 16px; font-weight: bold; color: #00732f; margin-bottom: 5px; margin-top: 10px;'>📱 Scan to try on your phone</p>", unsafe_allow_html=True)
 
 col_qr1, col_qr2, col_qr3 = st.columns([1, 1, 1])
