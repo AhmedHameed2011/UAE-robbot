@@ -6,7 +6,7 @@ import time
 from groq import Groq
 from dotenv import load_dotenv
 from audio_recorder_streamlit import audio_recorder
-from mutagen.mp3 import MP3 # مكتبة جديدة لحساب مدة الصوت
+from mutagen.mp3 import MP3
 
 # Load local .env file
 load_dotenv()
@@ -18,7 +18,7 @@ except Exception:
     GROQ_API_KEY = os.getenv("GROQ_API")
 
 # --- UI SETUP ---
-st.set_page_config(page_title="Zayed Robot", page_icon="🇦🇪", layout="centered")
+st.set_page_config(page_title="Zayed Robot", page_icon="🇦🇪🤖", layout="centered")
 
 # --- CUSTOM CSS ---
 st.markdown("""
@@ -40,6 +40,7 @@ st.markdown("""
     .arabic-text { text-align: center; font-size: 24px; color: #333; direction: rtl; font-family: 'Tahoma', sans-serif; margin-bottom: 5px; font-weight: bold;}
     .english-text { text-align: center; font-size: 18px; color: #666; margin-bottom: 20px; }
     
+    /* --- Make the microphone bigger and add a glow --- */
     div[data-testid="stAudioRecorder"] button {
         transform: scale(1.8);
         margin: 30px 0px;
@@ -47,6 +48,7 @@ st.markdown("""
         border: 2px solid #00732f;
     }
 
+    /* --- ANIMATION FOR THINKING --- */
     @keyframes pulse {
         0% { opacity: 0.6; }
         50% { opacity: 1; }
@@ -84,7 +86,7 @@ with col2:
 
 # --- INITIALIZE GROQ ---
 if not GROQ_API_KEY:
-    st.error("API Key not found.")
+    st.error("API Key not found. Please check your Streamlit Secrets or .env file.")
     st.stop()
     
 client = Groq(api_key=GROQ_API_KEY)
@@ -100,7 +102,7 @@ You MUST follow these rules strictly:
 3. Provide a detailed, warm, and engaging answer (about 2 to 3 sentences). Elaborate on the facts to make it interesting for the parents.
 4. Remember these facts:
    - Your name is Zayed. You are named in honor of the late Sheikh Zayed bin Sultan Al Nahyan, the founding father of the UAE.
-   - The school hosting this exhibition is "مدرسة الظاهر للشراكات التعليمية" (Al Dhaher charter school).
+   - The school hosting this exhibition is "مدرسة الظاهر للشراكات التعليمية" (Al Dhahir charter school).
    - The UAE 55th National Day is on December 2nd, 2026.
    - This exhibition showcases student projects in Artificial Intelligence.
    - You are built using Python and AI by a brilliant student from this school.
@@ -109,16 +111,18 @@ You MUST follow these rules strictly:
 # --- HELPER FUNCTIONS ---
 
 def transcribe_audio_groq(audio_bytes):
+    """Transcribes audio using Groq's fast Whisper model."""
     temp_file = "temp_audio.wav"
     with open(temp_file, "wb") as f:
         f.write(audio_bytes)
+    
     try:
         with open(temp_file, "rb") as file:
             transcription = client.audio.transcriptions.create(
                 file=(temp_file, file.read()),
                 model="whisper-large-v3-turbo",
                 response_format="text",
-                language=None
+                language=None # Auto-detect
             )
         text = transcription.strip() if isinstance(transcription, str) else transcription.text.strip()
     except Exception as e:
@@ -128,6 +132,7 @@ def transcribe_audio_groq(audio_bytes):
         if os.path.exists(temp_file):
             os.remove(temp_file)
     
+    # Simple language detection based on characters
     if text:
         lang = "ar" if any('\u0600' <= c <= '\u06FF' for c in text) else "en"
     else:
@@ -135,6 +140,7 @@ def transcribe_audio_groq(audio_bytes):
     return text, lang
 
 def get_ai_response_stream(user_text):
+    """Yields chunks of the AI response for streaming."""
     stream = client.chat.completions.create(
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
@@ -150,11 +156,13 @@ def get_ai_response_stream(user_text):
             yield chunk.choices[0].delta.content
 
 async def generate_tts(text, lang):
+    """Generates an MP3 file using Microsoft Edge TTS."""
     if lang == "ar":
         voice = "ar-AE-HamdanNeural" 
     else:
         voice = "en-US-GuyNeural"    
     output_file = "response_audio.mp3"
+    # Slightly faster rate (+15%) for exhibition energy
     communicate = edge_tts.Communicate(text, voice, volume="+100%", rate="+15%")
     await communicate.save(output_file)
     return output_file
@@ -175,42 +183,42 @@ with col_mic2:
         icon_size="3x",
     )
 
-# --- RESPONSE LOGIC ---
+# --- RESPONSE LOGIC (No Wake Word Required, Fixed Loop) ---
 if audio_bytes:
-    # إنشاء "حاويات فارغة" (Placeholders) للعناصر التي نريد مسحها لاحقاً
+    # 1. Create placeholders for all dynamic elements
     listen_placeholder = st.empty()
     user_text_placeholder = st.empty()
     ai_text_placeholder = st.empty()
     audio_placeholder = st.empty()
     status_placeholder = st.empty()
 
-    # 1. حالة الاستماع
+    # 2. Listening State
     listen_placeholder.markdown("<div class='thinking-animation'>🎤 زايد يستمع إليك... / Zayed is listening...</div>", unsafe_allow_html=True)
     user_text, detected_lang = transcribe_audio_groq(audio_bytes)
     listen_placeholder.empty() 
     
     if user_text:
-        # عرض ما قاله المستخدم في الحاوية المخصصة
         user_text_placeholder.success(f"**You said / قلت:** {user_text}")
         
-        # 2. حالة التفكير
+        # 3. Thinking State (Streaming)
         status_placeholder.markdown("<div class='thinking-animation'>🧠 زايد يفكر... / Zayed is thinking...</div>", unsafe_allow_html=True)
         
-        # بث النص داخل الحاوية المخصصة
         with ai_text_placeholder.container():
             response_text = st.write_stream(get_ai_response_stream(user_text))
             
         status_placeholder.empty() 
         
-        # 3. حالة التحدث
+        # 4. Speaking State
         status_placeholder.markdown("<div class='thinking-animation'>🔊 زايد يتحدث... / Zayed is speaking...</div>", unsafe_allow_html=True)
         
         audio_file = asyncio.run(generate_tts(response_text, detected_lang))
         
-        # حساب مدة الصوت
-        audio_length = MP3(audio_file).info.length
-        
-        # عرض الصوت في الحاوية المخصصة
+        # Calculate audio length to know how long to wait
+        try:
+            audio_length = MP3(audio_file).info.length
+        except Exception:
+            audio_length = 5 # fallback if mutagen fails
+            
         with audio_placeholder.container():
             with open(audio_file, "rb") as f:
                 st.audio(f.read(), format="audio/mp3", autoplay=True)
@@ -218,15 +226,25 @@ if audio_bytes:
         os.remove(audio_file)
         status_placeholder.empty()
         
-        # الانتظار حتى ينتهي الصوت (نضيف ثانية إضافية كهامش أمان)
-        time.sleep(audio_length + 1)
+        # 5. Wait for the audio to finish playing (add 1.5s buffer)
+        time.sleep(audio_length + 1.5) 
         
-        # --- مسح الشاشة بعد انتهاء التحدث ---
+        # 6. Clear all placeholders so the screen is clean for the next user
         user_text_placeholder.empty()
         ai_text_placeholder.empty()
         audio_placeholder.empty()
-        # سيتم مسح الرسائل تلقائياً وسيعود التطبيق لحالته الأصلية
-        st.rerun() # إعادة تشغيل التطبيق لمسح أي أثر متبقٍ
-
+        status_placeholder.empty()
+        
+        # 7. CRITICAL FIX: Clear the audio from memory so it doesn't loop
+        if "audio_recorder" in st.session_state:
+            del st.session_state["audio_recorder"]
+            
     else:
-        st.error("Sorry, I couldn't understand. Please try again. / عذراً، لم أفهم. حاول مرة أخرى.")
+        listen_placeholder.empty()
+        user_text_placeholder.error("Sorry, I couldn't understand. Please try again. / عذراً، لم أفهم. حاول مرة أخرى.")
+        time.sleep(2)
+        user_text_placeholder.empty()
+        
+        # Clear audio memory even on failure so it doesn't loop
+        if "audio_recorder" in st.session_state:
+            del st.session_state["audio_recorder"]
