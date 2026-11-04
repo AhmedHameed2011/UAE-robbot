@@ -1,4 +1,4 @@
-يimport streamlit as st
+import streamlit as st
 import edge_tts
 import asyncio
 import os
