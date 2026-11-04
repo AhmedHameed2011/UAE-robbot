@@ -17,7 +17,7 @@ except Exception:
     GROQ_API_KEY = os.getenv("GROQ_API")
 
 # --- UI SETUP ---
-st.set_page_config(page_title="Zayed Robot", page_icon="🇦🇪", layout="wide") # تم تغييرها إلى wide
+st.set_page_config(page_title="Zayed Robot", page_icon="🇦🇪", layout="wide")
 
 # --- CUSTOM CSS ---
 st.markdown("""
@@ -30,14 +30,20 @@ st.markdown("""
         margin-bottom: 20px;
         border-radius: 5px;
     }
-    h1 { color: #00732f; text-align: center; font-family: 'Tahoma', sans-serif; font-weight: bold; direction: rtl; margin-bottom: 0;}
+    h1 { color: #00732f; text-align: center; font-family: 'Tahoma', sans-serif; font-weight: bold; direction: rtl; margin-bottom: 0; font-size: 2.5rem;}
     h3 { text-align: center; color: #333; margin-top: 5px; margin-bottom: 20px;}
-    .qr-card {
-        background-color: white; padding: 15px; border-radius: 15px;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1); text-align: center;
-        margin: 10px auto; max-width: 250px;
+    
+    /* تنسيق حاوية الفيديو/الصورة */
+    .robot-media-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
     }
-    .arabic-text { text-align: center; font-size: 22px; color: #333; direction: rtl; font-family: 'Tahoma', sans-serif; margin-bottom: 5px; font-weight: bold;}
+
+    .arabic-text { text-align: center; font-size: 20px; color: #333; direction: rtl; font-family: 'Tahoma', sans-serif; margin-bottom: 5px; font-weight: bold;}
     .english-text { text-align: center; font-size: 16px; color: #666; margin-bottom: 15px; }
     header {visibility: hidden;} footer {visibility: hidden;} #MainMenu {visibility: hidden;}
     </style>
@@ -45,43 +51,42 @@ st.markdown("""
 
 st.markdown("<div class='uae-border'></div>", unsafe_allow_html=True)
 
-# --- MAIN LAYOUT (Columns) ---
-# عمود للروبوت (40%) وعمود للواجهة (60%)
-col_robot, col_ui = st.columns([1, 1.5])
+# --- MAIN LAYOUT ---
+col_robot, col_ui = st.columns([1, 1.2])
 
-# --- LEFT COLUMN: Robot Image ---
+# --- LEFT COLUMN: Robot Video/Image ---
 with col_robot:
-    try:
-        # عرض صورة الروبوت
-        st.image("robot.png", use_container_width=True)
-    except Exception:
-        st.warning("⚠️ لم يتم العثور على صورة الروبوت. تأكد من رفع ملف 'robot.png' إلى GitHub.")
+    robot_col1, robot_col2, robot_col3 = st.columns([0.1, 2, 0.1])
+    with robot_col2:
+        st.markdown("<div class='robot-media-container'>", unsafe_allow_html=True)
+        # محاولة عرض الفيديو أولاً
+        if os.path.exists("robot_video.mp4"):
+            # autoplay=True (يشتغل تلقائياً), loop=True (يعيد), muted=True (صامت لتجنب مشاكل المتصفح)
+            st.video("robot_video.mp4", autoplay=True, loop=True, muted=True)
+        elif os.path.exists("robot.png"):
+            # إذا لم يوجد فيديو، اعرض الصورة
+            st.image("robot.png", use_container_width=True)
+        else:
+            st.warning("⚠️ لم يتم العثور على صورة أو فيديو الروبوت.")
+        st.markdown("</div>", unsafe_allow_html=True)
 
 # --- RIGHT COLUMN: The UI ---
 with col_ui:
-    # Header
     st.markdown("<h1>🤖 زايد - صديق اليوم الوطني 55</h1>", unsafe_allow_html=True)
     st.markdown("<h3>Zayed - National Day 55 Buddy</h3>", unsafe_allow_html=True)
     
     # QR Code
-    st.markdown("""
-        <div class='qr-card'>
-            <p style='font-size: 14px; font-weight: bold; color: #00732f; margin-bottom:0;'>📱 Scan to try on your phone</p>
-        </div>
-    """, unsafe_allow_html=True)
-    
     qr_col1, qr_col2, qr_col3 = st.columns([1, 1, 1])
     with qr_col2:
         try:
-            st.image("qr_code.png", use_container_width=True)
+            st.image("qr_code.png", width=130)
+            st.markdown("<p style='text-align:center; font-size:12px; color:#00732f; margin-top:-10px;'>Scan to try 📱</p>", unsafe_allow_html=True)
         except Exception:
             st.warning("QR Code image not found.")
 
-    # Instructions
     st.markdown("<p class='arabic-text'>👇 اضغط على المايكروفون وتحدث مع زايد</p>", unsafe_allow_html=True)
     st.markdown("<p class='english-text'>👇 Press the microphone and talk to Zayed</p>", unsafe_allow_html=True)
 
-    # Mic Button
     mic_col1, mic_col2, mic_col3 = st.columns([1, 1, 1])
     with mic_col2:
         audio_bytes = audio_recorder(
@@ -99,7 +104,6 @@ with col_ui:
         
     client = Groq(api_key=GROQ_API_KEY)
 
-    # --- ROBOT'S PERSONALITY ---
     SYSTEM_PROMPT = """
     You are a friendly, intelligent robot named "Zayed" (زايد). You are at a school exhibition for the UAE 55th National Day.
     Your job is to answer parents' questions.
@@ -109,13 +113,12 @@ with col_ui:
     3. Provide a detailed, warm, and engaging answer (about 3 to 4 sentences).
     4. Remember these facts:
        - Your name is Zayed. You are named in honor of the late Sheikh Zayed bin Sultan Al Nahyan.
-       - The school hosting this exhibition is "مدرسة الظاهر للشراكات التعليمية" (Al Dhahir charter school).
+       - The school hosting this exhibition is "الظاهر للشراكات التعليمية" (Al Dhahir for Educational Partnerships).
        - The UAE 55th National Day is on December 2nd, 2026.
        - The UAE National Day is a celebration of unity and solidarity among the SEVEN Emirates (الإمارات السبعة). (Never say six).
        - This exhibition showcases student projects in Artificial Intelligence.
     """
 
-    # --- HELPER FUNCTIONS ---
     def transcribe_audio(audio_bytes):
         r = sr.Recognizer()
         temp_file = "temp_audio.wav"
@@ -159,7 +162,6 @@ with col_ui:
         await communicate.save(output_file)
         return output_file
 
-    # --- CHAT LOGIC ---
     if audio_bytes:
         st.info("Processing... / جاري المعالجة...")
         user_text, detected_lang = transcribe_audio(audio_bytes)
