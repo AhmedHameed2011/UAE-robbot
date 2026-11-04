@@ -17,7 +17,7 @@ except Exception:
     GROQ_API_KEY = os.getenv("GROQ_API")
 
 # --- UI SETUP ---
-st.set_page_config(page_title="Zayed Robot", page_icon="🇦🇪", layout="wide")
+st.set_page_config(page_title="Zayed Robot", page_icon="🇦🇪🤖", layout="wide")
 
 # --- CUSTOM CSS ---
 st.markdown("""
@@ -113,7 +113,7 @@ with col_ui:
     3. Provide a detailed, warm, and engaging answer (about 3 to 4 sentences).
     4. Remember these facts:
        - Your name is Zayed. You are named in honor of the late Sheikh Zayed bin Sultan Al Nahyan.
-       - The school hosting this exhibition is "الظاهر للشراكات التعليمية" (Al Dhahir for Educational Partnerships).
+       - The school hosting this exhibition is "مدرسة الظاهر للشراكات التعليمية " (Al Dhahir charter school).
        - The UAE 55th National Day is on December 2nd, 2026.
        - The UAE National Day is a celebration of unity and solidarity among the SEVEN Emirates (الإمارات السبعة). (Never say six).
        - This exhibition showcases student projects in Artificial Intelligence.
