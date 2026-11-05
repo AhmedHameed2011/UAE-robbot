@@ -29,7 +29,6 @@ st.markdown("""
         padding-bottom: 0rem !important;
         max-width: 900px !important; 
     }
-    
     .stApp { background-color: #ffffff; }
     
     div[data-testid="stVerticalBlock"] > div {
@@ -104,7 +103,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- دالة للتحقق من وجود الملفات ---
 def file_exists(path):
     return os.path.exists(path)
 
@@ -113,8 +111,6 @@ col_intro1, col_intro2, col_intro3 = st.columns([1, 3, 1])
 with col_intro2:
     if file_exists("intro.gif"):
         st.image("intro.gif", use_container_width=True)
-    else:
-        st.warning("⚠️ لم يتم العثور على صورة الغلاف 'intro.gif'.")
 
 st.markdown("<h1>🤖 زايد - صديق اليوم الوطني 55</h1>", unsafe_allow_html=True)
 st.markdown("<h2>Zayed - National Day 55 Buddy</h2>", unsafe_allow_html=True)
@@ -125,8 +121,6 @@ with col_left:
     st.markdown("<p style='text-align: center; font-size: 16px; font-weight: bold; color: #00732f; margin-bottom: 5px;'>📱 Scan to try on your phone</p>", unsafe_allow_html=True)
     if file_exists("qr_code.png"):
         st.image("qr_code.png", use_container_width=True)
-    else:
-        st.warning("QR Code image not found.")
         
     st.markdown("<p class='arabic-text'>👇 تحدث مع زايد</p>", unsafe_allow_html=True)
     st.markdown("<p class='english-text'>👇 Talk to Zayed</p>", unsafe_allow_html=True)
@@ -144,10 +138,6 @@ with col_right:
     robot_placeholder = st.empty()
     if file_exists("robot_idle.png"):
         robot_placeholder.image("robot_idle.png", use_container_width=True)
-    elif file_exists("robot.png"):
-        robot_placeholder.image("robot.png", use_container_width=True)
-    else:
-        st.warning("⚠️ لم يتم العثور على صورة الروبوت.")
 
 # --- INITIALIZE GROQ ---
 if not GROQ_API_KEY:
@@ -158,32 +148,24 @@ client = Groq(api_key=GROQ_API_KEY)
 
 # --- ROBOT'S PERSONALITY ---
 SYSTEM_PROMPT = """
-You are "Zayed" (زايد), a very friendly and welcoming robot at a UAE 55th National Day school exhibition. 
-When you introduce yourself, you should say something like: "أنا زايد، روبوت الذكاء الاصطناعي" (I am Zayed, the AI robot).
-Your job is to answer parents' questions.
-You MUST follow these rules strictly:
-1. STRICT LANGUAGE RULE: If the user speaks Arabic, reply ONLY in clear Modern Standard Arabic (Fusha). Do NOT mix any English words into the Arabic sentence.
-2. If the user speaks English, reply ONLY in English. Do NOT mix Arabic words into the English sentence.
-3. Use SHORT sentences. Do NOT use Emojis in your response.
-4. Provide a comprehensive, rich, and complete answer (up to 6-7 sentences).
-5. If the user asks about Sheikh Zayed, his life, or his legacy, you MUST give a highly detailed, accurate, and respectful answer using the following information:
-   - الشيخ زايد بن سلطان آل نهيان هو القائد المؤسس وأول رئيس لدولة الإمارات العربية المتحدة.
-   - ولد في أبوظبي عام 1918، ونشأ في مدينة العين.
-   - في عام 1946، أصبح ممثلاً للحاكم في العين، حيث طور الواحات وبنى أول مدرسة ومستشفى.
-   - في عام 1966، أصبح حاكماً لإمارة أبوظبي وبدأ مسيرة التحديث.
-   - في عام 1971، قاد جهود توحيد الإمارات وأعلن قيام الاتحاد في الثاني من ديسمبر.
-   - توفي في الثاني من نوفمبر عام 2004، تاركاً إرثاً وطنياً وإنسانياً عظيماً.
-6. Remember these facts:
-   - Your name is Zayed.
-   - The school hosting this exhibition is "مدرسة الظاهر للشراكات التعليمية" (Al Dhaher charter school).
-   - The UAE 55th National Day is on December 2nd, 2026.
+You are "Zayed" (زايد), a friendly robot at a UAE 55th National Day school exhibition. 
+Answer parents' questions warmly.
+1. If the user speaks Arabic, reply ONLY in Arabic. Do NOT mix English.
+2. If the user speaks English, reply ONLY in English.
+3. Keep sentences short and clear.
+4. If asked about Sheikh Zayed, mention he is the founding father of the UAE, born in 1918, united the Emirates in 1971, and passed away in 2004.
+5. The school is "مدرسة الظاهر للشراكات التعليمية".
 """
 
 # --- HELPER FUNCTIONS ---
 def transcribe_audio_groq(audio_bytes):
+    if not audio_bytes or len(audio_bytes) < 1000: # Check if audio is too small/empty
+        return None, "en"
+        
     temp_file = "temp_audio.wav"
     with open(temp_file, "wb") as f:
         f.write(audio_bytes)
+    
     try:
         with open(temp_file, "rb") as file:
             transcription = client.audio.transcriptions.create(
@@ -194,13 +176,17 @@ def transcribe_audio_groq(audio_bytes):
             )
         text = transcription.strip() if isinstance(transcription, str) else transcription.text.strip()
     except Exception as e:
+        # This will print the EXACT error to the terminal logs
+        print(f"--- GROQ TRANSCRIPTION ERROR: {e} ---")
         text = None
     finally:
         if os.path.exists(temp_file):
             os.remove(temp_file)
-    if text:
+    
+    if text and len(text) > 1:
         lang = "ar" if any('\u0600' <= c <= '\u06FF' for c in text) else "en"
     else:
+        text = None
         lang = "en"
     return text, lang
 
@@ -238,11 +224,8 @@ if audio_bytes:
     ai_text_placeholder = st.empty()
     audio_placeholder = st.empty()
 
-    # التغيير إلى صورة التحدث (GIF)
     if file_exists("robot_talking.gif"):
         robot_placeholder.image("robot_talking.gif", use_container_width=True)
-    elif file_exists("Robot_Talking.gif"): # احتياطاً إذا كان الاسم بحرف كبير
-        robot_placeholder.image("Robot_Talking.gif", use_container_width=True)
         
     status_placeholder.markdown("<div class='thinking-animation'>🎤 زايد يستمع... / Zayed is listening...</div>", unsafe_allow_html=True)
     user_text, detected_lang = transcribe_audio_groq(audio_bytes)
@@ -272,13 +255,11 @@ if audio_bytes:
         status_placeholder.empty()
         time.sleep(audio_length + 3.5) 
         
-        # تنظيف الشاشة
         user_text_placeholder.empty()
         ai_text_placeholder.empty()
         audio_placeholder.empty()
         status_placeholder.empty()
         
-        # العودة إلى الصورة الثابتة
         if file_exists("robot_idle.png"):
             robot_placeholder.image("robot_idle.png", use_container_width=True)
             
@@ -287,7 +268,7 @@ if audio_bytes:
             
     else:
         status_placeholder.empty()
-        st.error("عذراً، لم أفهم كلامك. يرجى المحاولة مرة أخرى.\n\nSorry, I couldn't understand.")
+        st.error("عذراً، لم أفهم كلامك أو أن الصوت لم يُسجل بشكل صحيح. يرجى المحاولة مرة أخرى والتحدث بوضوح.\n\nSorry, I couldn't understand or the audio was empty. Please try again.")
         time.sleep(3) 
         
         if file_exists("robot_idle.png"):
