@@ -159,7 +159,8 @@ Answer parents' questions warmly.
 
 # --- HELPER FUNCTIONS ---
 def transcribe_audio_groq(audio_bytes):
-    if not audio_bytes or len(audio_bytes) < 1000: # Check if audio is too small/empty
+    # التحقق من أن حجم الصوت كبير بما يكفي (أكثر من 5000 بايت)
+    if not audio_bytes or len(audio_bytes) < 5000: 
         return None, "en"
         
     temp_file = "temp_audio.wav"
@@ -176,7 +177,6 @@ def transcribe_audio_groq(audio_bytes):
             )
         text = transcription.strip() if isinstance(transcription, str) else transcription.text.strip()
     except Exception as e:
-        # This will print the EXACT error to the terminal logs
         print(f"--- GROQ TRANSCRIPTION ERROR: {e} ---")
         text = None
     finally:
