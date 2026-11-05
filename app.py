@@ -5,10 +5,8 @@ import os
 import time
 from groq import Groq
 from dotenv import load_dotenv
-from audio_recorder_streamlit import audio_recorder
 from mutagen.mp3 import MP3
 
-# Load local .env file
 load_dotenv()
 
 # --- API KEY SETUP ---
@@ -23,56 +21,46 @@ st.set_page_config(page_title="Zayed Robot", page_icon="🇦🇪🤖", layout="c
 # --- CUSTOM CSS ---
 st.markdown("""
     <style>
-    /* 1. تعديل الهوامش العلوية */
     .block-container {
         padding-top: 1rem !important;
         padding-bottom: 0rem !important;
         padding-left: 1rem !important;
         padding-right: 1rem !important;
     }
-    
     .stApp { background-color: #ffffff; }
-    
-    /* 2. تصفير المسافات بين العناصر */
     div[data-testid="stVerticalBlock"] > div {
         gap: 0.2rem !important; 
         padding-bottom: 0rem !important;
     }
-
-    /* 3. إزالة المسافة أسفل الصورة */
     div[data-testid="stImage"] {
         margin-bottom: -15px !important; 
         padding-bottom: 0px !important;
         line-height: 0 !important;
     }
-
-    /* 4. العناوين */
     h1 { color: #00732f !important; text-align: center; font-family: 'Arial', sans-serif; font-weight: bold; margin-top: 5px !important; margin-bottom: 0px !important; font-size: 22px !important;}
     h2 { text-align: center; color: #333 !important; margin-bottom: 15px !important; margin-top: 0px !important; font-size: 16px !important;}
-    
-    /* النصوص */
     .arabic-text { text-align: center; font-size: 18px; color: #333; direction: rtl; font-family: 'Tahoma', sans-serif; margin-bottom: 0px; margin-top: 10px; font-weight: bold;}
     .english-text { text-align: center; font-size: 14px; color: #666; margin-bottom: 5px; }
-    
-    /* 5. تكبير الزر وإخفاء المربع الأسود */
-    div[data-testid="stAudioRecorder"] {
-        background-color: transparent !important;
+    div[data-testid="stAudioInput"] {
+        display: flex;
+        justify-content: center;
+        margin-top: 10px;
+    }
+    div[data-testid="stAudioInput"] button {
+        transform: scale(1.5);
+        background-color: #00732f !important;
+        color: white !important;
+        border-radius: 50px !important;
+        padding: 15px 30px !important;
         border: none !important;
-        box-shadow: none !important;
+        box-shadow: 0 4px 15px rgba(0, 115, 47, 0.5) !important;
     }
-    div[data-testid="stAudioRecorder"] > div {
-        background-color: transparent !important;
+    div[data-testid="stAudioInput"] button::before {
+        content: "🎤 اضغط للتحدث | Tap to Speak";
+        font-size: 18px;
+        font-weight: bold;
+        margin-right: 10px;
     }
-    div[data-testid="stAudioRecorder"] button {
-        transform: scale(1.8) !important;
-        margin: 0px auto !important;
-        display: block !important;
-        box-shadow: 0 0 15px rgba(0, 115, 47, 0.4) !important;
-        border: 2px solid #00732f !important;
-        background-color: #ffffff !important; 
-    }
-
-    /* تأثير الرسوم المتحركة */
     @keyframes pulse {
         0% { opacity: 0.6; }
         50% { opacity: 1; }
@@ -85,8 +73,6 @@ st.markdown("""
         animation: pulse 1.5s infinite;
         margin-top: 10px;
     }
-    
-    /* إخفاء عناصر Streamlit الافتراضية */
     header {visibility: hidden;} footer {visibility: hidden;} #MainMenu {visibility: hidden;}
     hr { display: none; }
     </style>
@@ -96,11 +82,10 @@ st.markdown("""
 try:
     st.image("intro.gif", use_container_width=True)
 except Exception:
-    st.warning("⚠️ لم يتم العثور على صورة الغلاف 'intro.gif'. يرجى التأكد من رفعها.")
+    st.warning("⚠️ لم يتم العثور على صورة الغلاف 'intro.gif'.")
 
 st.markdown("<h1>🤖 زايد - صديق اليوم الوطني 55</h1>", unsafe_allow_html=True)
 st.markdown("<h2>Zayed - National Day 55 Buddy</h2>", unsafe_allow_html=True)
-
 st.markdown("<p style='text-align: center; font-size: 16px; font-weight: bold; color: #00732f; margin-bottom: 5px; margin-top: 10px;'>📱 Scan to try on your phone</p>", unsafe_allow_html=True)
 
 col_qr1, col_qr2, col_qr3 = st.columns([1, 1, 1])
@@ -115,23 +100,16 @@ st.markdown("<p class='english-text'>👇 Talk to Zayed</p>", unsafe_allow_html=
 
 col_mic1, col_mic2, col_mic3 = st.columns([1, 1, 1])
 with col_mic2:
-    audio_bytes = audio_recorder(
-        text="",
-        recording_color="#ff0000",
-        neutral_color="#00732f",
-        icon_name="microphone",
-        icon_size="2x",
-        key="mic_center"
-    )
+    audio_value = st.audio_input(" ", label_visibility="collapsed")
 
 # --- INITIALIZE GROQ ---
 if not GROQ_API_KEY:
-    st.error("API Key not found. Please check your Streamlit Secrets or .env file.")
+    st.error("API Key not found.")
     st.stop()
     
 client = Groq(api_key=GROQ_API_KEY)
 
-# --- ROBOT'S PERSONALITY ---
+# --- ROBOT'S PERSONALITY (REQUEST COMPREHENSIVE ANSWERS) ---
 SYSTEM_PROMPT = """
 You are "Zayed" (زايد), a very friendly and welcoming robot at a UAE 55th National Day school exhibition. 
 When you introduce yourself, you should say something like: "أنا زايد، روبوت الذكاء الاصطناعي" (I am Zayed, the AI robot).
@@ -139,7 +117,7 @@ Your job is to answer parents' questions.
 You MUST follow these rules strictly:
 1. If the user speaks Arabic, reply in Arabic.
 2. If the user speaks English, reply in English.
-3. Provide a detailed, warm, and engaging answer (about 2 to 3 sentences). Elaborate on the facts to make it interesting for the parents.
+3. Provide a comprehensive, rich, and complete answer. Do not cut your answer short. Explain the topic fully and enthusiastically so the parents get a complete picture (up to 6-7 sentences if needed).
 4. Remember these facts:
    - Your name is Zayed. You are named in honor of the late Sheikh Zayed bin Sultan Al Nahyan, the founding father of the UAE.
    - The school hosting this exhibition is "مدرسة الظاهر للشراكات التعليمية" (Al Dhaher charter school).
@@ -150,11 +128,11 @@ You MUST follow these rules strictly:
 
 # --- HELPER FUNCTIONS ---
 
-def transcribe_audio_groq(audio_bytes):
+def transcribe_audio_groq(audio_value):
+    audio_bytes = audio_value.read()
     temp_file = "temp_audio.wav"
     with open(temp_file, "wb") as f:
         f.write(audio_bytes)
-    
     try:
         with open(temp_file, "rb") as file:
             transcription = client.audio.transcriptions.create(
@@ -170,7 +148,6 @@ def transcribe_audio_groq(audio_bytes):
     finally:
         if os.path.exists(temp_file):
             os.remove(temp_file)
-    
     if text:
         lang = "ar" if any('\u0600' <= c <= '\u06FF' for c in text) else "en"
     else:
@@ -184,8 +161,8 @@ def get_ai_response_stream(user_text):
             {"role": "user", "content": user_text}
         ],
         model="openai/gpt-oss-20b",
-        temperature=0.6,
-        max_tokens=200,
+        temperature=0.7, # زيادة طفيفة للإبداع في الإجابات الطويلة
+        max_tokens=1000, # زيادة كبيرة للسماح بإجابات مطولة جداً
         stream=True,
     )
     for chunk in stream:
@@ -203,23 +180,20 @@ async def generate_tts(text, lang):
     return output_file
 
 # --- RESPONSE LOGIC ---
-if audio_bytes:
-    # إنشاء حاويات مؤقتة للرسائل
+if audio_value:
     listen_placeholder = st.empty()
     user_text_placeholder = st.empty()
     ai_text_placeholder = st.empty()
     audio_placeholder = st.empty()
     status_placeholder = st.empty()
 
-    # 1. حالة الاستماع
     listen_placeholder.markdown("<div class='thinking-animation'>🎤 زايد يستمع... / Zayed is listening...</div>", unsafe_allow_html=True)
-    user_text, detected_lang = transcribe_audio_groq(audio_bytes)
+    user_text, detected_lang = transcribe_audio_groq(audio_value)
     listen_placeholder.empty() 
     
     if user_text:
         user_text_placeholder.success(f"**You said / قلت:** {user_text}")
         
-        # 2. حالة التفكير
         status_placeholder.markdown("<div class='thinking-animation'>🧠 زايد يفكر... / Zayed is thinking...</div>", unsafe_allow_html=True)
         
         with ai_text_placeholder.container():
@@ -227,7 +201,6 @@ if audio_bytes:
             
         status_placeholder.empty() 
         
-        # 3. حالة التحدث
         status_placeholder.markdown("<div class='thinking-animation'>🔊 زايد يتحدث... / Zayed is speaking...</div>", unsafe_allow_html=True)
         
         audio_file = asyncio.run(generate_tts(response_text, detected_lang))
@@ -244,31 +217,18 @@ if audio_bytes:
         os.remove(audio_file)
         status_placeholder.empty()
         
-        # الانتظار حتى ينتهي الصوت
-        time.sleep(audio_length + 1.5) 
+        # زيادة وقت الانتظار إلى 3.5 ثانية لضمان اكتمال الصوت الطويل
+        time.sleep(audio_length + 3.5) 
         
-        # تنظيف الشاشة
         user_text_placeholder.empty()
         ai_text_placeholder.empty()
         audio_placeholder.empty()
         status_placeholder.empty()
         
-        if "audio_recorder" in st.session_state:
-            del st.session_state["audio_recorder"]
+        st.rerun()
             
     else:
-        # --- هنا حل مشكلة اختفاء رسالة الخطأ ---
-        listen_placeholder.empty() # مسح رسالة الاستماع
-        
-        # عرض رسالة الخطأ في مكان ثابت (بدون استخدام placeholder)
-        st.error("عذراً، لم أفهم كلامك. يرجى المحاولة مرة أخرى والتحدث بوضوح.\n\nSorry, I couldn't understand. Please try again and speak clearly.")
-        
-        # إبقاء الرسالة ظاهرة لمدة 3 ثوانٍ
+        listen_placeholder.empty()
+        st.error("عذراً، لم أفهم كلامك. يرجى المحاولة مرة أخرى.\n\nSorry, I couldn't understand. Please try again.")
         time.sleep(3) 
-        
-        # مسح الصوت من الذاكرة
-        if "audio_recorder" in st.session_state:
-            del st.session_state["audio_recorder"]
-            
-        # إعادة تشغيل الصفحة لمسح الرسالة والعودة للواجهة الأصلية
         st.rerun()
