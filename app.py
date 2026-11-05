@@ -3,6 +3,7 @@ import edge_tts
 import asyncio
 import os
 import time
+import re
 from groq import Groq
 from dotenv import load_dotenv
 from audio_recorder_streamlit import audio_recorder
@@ -116,25 +117,24 @@ if not GROQ_API_KEY:
     
 client = Groq(api_key=GROQ_API_KEY)
 
-# --- ROBOT'S PERSONALITY (With Sheikh Zayed's Info) ---
+# --- ROBOT'S PERSONALITY (UPDATED FOR CLEAR ARABIC) ---
 SYSTEM_PROMPT = """
 You are "Zayed" (زايد), a very friendly and welcoming robot at a UAE 55th National Day school exhibition. 
 When you introduce yourself, you should say something like: "أنا زايد، روبوت الذكاء الاصطناعي" (I am Zayed, the AI robot).
 Your job is to answer parents' questions.
 You MUST follow these rules strictly:
-1. If the user speaks Arabic, reply in Arabic.
+1. If the user speaks Arabic, reply in Arabic. Use clear, simple Modern Standard Arabic (Fusha). Do NOT use English words mixed into Arabic sentences.
 2. If the user speaks English, reply in English.
-3. Provide a comprehensive, rich, and complete answer. Do not cut your answer short. Explain the topic fully and enthusiastically so the parents get a complete picture (up to 6-7 sentences if needed).
-4. If the user asks about Sheikh Zayed, his life, or his legacy, you MUST give a highly detailed, accurate, and respectful answer using the following information:
-   - Sheikh Zayed bin Sultan Al Nahyan (6 May 1918 – 2 November 2004) is the founding father and the first President of the United Arab Emirates.
-   - He was born in Abu Dhabi in 1918, the youngest of four brothers. He grew up in Al Ain, memorizing the Holy Quran and learning Bedouin traditions, falconry, and wisdom.
-   - In 1946, he became the Ruler's Representative in Al Ain, where he developed the oasis, repaired the falaj irrigation systems, and built the first school and hospital there.
-   - In 1966, he became the Ruler of Abu Dhabi and started a comprehensive modernization process, investing oil revenues in infrastructure.
-   - In 1971, he led the efforts (alongside his brother Sheikh Rashid bin Saeed Al Maktoum) to unite the Trucial States, announcing the establishment of the UAE on December 2nd, 1971. He was elected as the first President and re-elected multiple times until his death.
-   - He transformed the UAE from a simple society relying on pearl diving and fishing into a modern state with high living standards. He co-founded the Gulf Cooperation Council (GCC) in 1981.
-   - He was famous for his extensive charitable initiatives worldwide, his passion for agriculture, desert afforestation, and environmental protection.
-   - He passed away on November 2, 2004, at the age of 86, leaving behind a profound national and humanitarian legacy.
-5. Remember these facts about the exhibition:
+3. Use SHORT sentences. Break your answer into simple sentences to make it easy for the text-to-speech engine to read clearly. Do NOT use Emojis in your response.
+4. Provide a comprehensive, rich, and complete answer. Explain the topic fully and enthusiastically (up to 6-7 sentences if needed).
+5. If the user asks about Sheikh Zayed, his life, or his legacy, you MUST give a highly detailed, accurate, and respectful answer using the following information:
+   - الشيخ زايد بن سلطان آل نهيان هو القائد المؤسس وأول رئيس لدولة الإمارات العربية المتحدة.
+   - ولد في أبوظبي عام 1918، ونشأ في مدينة العين.
+   - في عام 1946، أصبح ممثلاً للحاكم في العين، حيث طور الواحات وبنى أول مدرسة ومستشفى.
+   - في عام 1966، أصبح حاكماً لإمارة أبوظبي وبدأ مسيرة التحديث.
+   - في عام 1971، قاد جهود توحيد الإمارات وأعلن قيام الاتحاد في الثاني من ديسمبر.
+   - توفي في الثاني من نوفمبر عام 2004، تاركاً إرثاً وطنياً وإنسانياً عظيماً.
+6. Remember these facts about the exhibition:
    - Your name is Zayed, named in his honor.
    - The school hosting this exhibition is "مدرسة الظاهر للشراكات التعليمية" (Al Dhaher charter school).
    - The UAE 55th National Day is on December 2nd, 2026.
@@ -186,26 +186,35 @@ def get_ai_response_stream(user_text):
         if chunk.choices[0].delta.content:
             yield chunk.choices[0].delta.content
 
+# دالة جديدة لتنظيف النص قبل النطق (لإزالة الرموز التعبيرية)
+def clean_text_for_tts(text):
+    # إزالة الرموز التعبيرية والأحرف غير المرغوبة
+    text = re.sub(r'[^\w\s\.\,\!\?\-\:\;]', '', text)
+    return text
+
 async def generate_tts(text, lang):
+    # تنظيف النص من الرموز التعبيرية
+    clean_text = clean_text_for_tts(text)
+    
     if lang == "ar":
-        voice = "ar-AE-HamdanNeural" 
+        voice = "ar-AE-FatimaNeural" # تغيير الصوت إلى أنثوي (Fatima) لنطق أوضح
     else:
-        voice = "en-US-GuyNeural"    
+        voice = "en-US-AriaNeural"   # تغيير الصوت إلى أنثوي (Aria)
+        
     output_file = "response_audio.mp3"
-    communicate = edge_tts.Communicate(text, voice, volume="+100%", rate="+15%")
+    # تقليل السرعة قليلاً ليكون النطق أوضح
+    communicate = edge_tts.Communicate(clean_text, voice, volume="+100%", rate="+5%")
     await communicate.save(output_file)
     return output_file
 
-# --- RESPONSE LOGIC (FIXED LOOP) ---
+# --- RESPONSE LOGIC ---
 if audio_bytes:
-    # 1. إنشاء حاويات مؤقتة
     listen_placeholder = st.empty()
     user_text_placeholder = st.empty()
     ai_text_placeholder = st.empty()
     audio_placeholder = st.empty()
     status_placeholder = st.empty()
 
-    # 2. حالة الاستماع
     listen_placeholder.markdown("<div class='thinking-animation'>🎤 زايد يستمع... / Zayed is listening...</div>", unsafe_allow_html=True)
     user_text, detected_lang = transcribe_audio_groq(audio_bytes)
     listen_placeholder.empty() 
@@ -213,14 +222,15 @@ if audio_bytes:
     if user_text:
         user_text_placeholder.success(f"**You said / قلت:** {user_text}")
         
-        # 3. حالة التفكير
         status_placeholder.markdown("<div class='thinking-animation'>🧠 زايد يفكر... / Zayed is thinking...</div>", unsafe_allow_html=True)
+        
         with ai_text_placeholder.container():
             response_text = st.write_stream(get_ai_response_stream(user_text))
+            
         status_placeholder.empty() 
         
-        # 4. حالة التحدث
         status_placeholder.markdown("<div class='thinking-animation'>🔊 زايد يتحدث... / Zayed is speaking...</div>", unsafe_allow_html=True)
+        
         audio_file = asyncio.run(generate_tts(response_text, detected_lang))
         
         try:
@@ -235,31 +245,22 @@ if audio_bytes:
         os.remove(audio_file)
         status_placeholder.empty()
         
-        # 5. الانتظار حتى ينتهي الصوت
         time.sleep(audio_length + 3.5) 
         
-        # 6. تنظيف الشاشة بصرياً (بدون إعادة تشغيل الصفحة)
         user_text_placeholder.empty()
         ai_text_placeholder.empty()
         audio_placeholder.empty()
         status_placeholder.empty()
         
-        # 7. الحل النهائي لمنع التكرار: مسح الصوت من الذاكرة
-        # (هذا يمنع التطبيق من معالجة نفس الصوت مرة أخرى في الدورة التالية)
         if "mic_center" in st.session_state:
             del st.session_state["mic_center"]
-        
-        # ملاحظة: لم نستخدم st.rerun() هنا لتجنب الحلقة المفرغة.
-        # الشاشة الآن نظيفة، وزر المايكروفون جاهز للضغط عليه من جديد.
-
+            
     else:
         listen_placeholder.empty()
         st.error("عذراً، لم أفهم كلامك. يرجى المحاولة مرة أخرى.\n\nSorry, I couldn't understand. Please try again.")
         time.sleep(3) 
         
-        # مسح الصوت من الذاكرة
         if "mic_center" in st.session_state:
             del st.session_state["mic_center"]
-        
-        # إعادة تشغيل الصفحة هنا آمنة لأننا مسحنا الصوت
+            
         st.rerun()
