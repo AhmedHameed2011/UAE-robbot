@@ -31,20 +31,26 @@ st.markdown("""
         padding-right: 1rem !important;
     }
     .stApp { background-color: #ffffff; }
+    
+    /* تقليل المسافات بين العناصر */
     div[data-testid="stVerticalBlock"] > div {
         gap: 0.2rem !important; 
         padding-bottom: 0rem !important;
     }
+
+    /* إزالة المسافة أسفل الصورة */
     div[data-testid="stImage"] {
         margin-bottom: -15px !important; 
         padding-bottom: 0px !important;
         line-height: 0 !important;
     }
+
     h1 { color: #00732f !important; text-align: center; font-family: 'Arial', sans-serif; font-weight: bold; margin-top: 5px !important; margin-bottom: 0px !important; font-size: 22px !important;}
     h2 { text-align: center; color: #333 !important; margin-bottom: 15px !important; margin-top: 0px !important; font-size: 16px !important;}
     .arabic-text { text-align: center; font-size: 18px; color: #333; direction: rtl; font-family: 'Tahoma', sans-serif; margin-bottom: 0px; margin-top: 10px; font-weight: bold;}
     .english-text { text-align: center; font-size: 14px; color: #666; margin-bottom: 5px; }
     
+    /* إخفاء المربع الأسود حول المايكروفون */
     div[data-testid="stAudioRecorder"] {
         background-color: transparent !important;
         border: none !important;
@@ -60,6 +66,27 @@ st.markdown("""
         box-shadow: 0 0 15px rgba(0, 115, 47, 0.4) !important;
         border: 2px solid #00732f !important;
         background-color: #ffffff !important; 
+    }
+
+    /* --- إصلاح عرض النصوص (مربع "You said" والرد) --- */
+    /* إجبار الحاويات على أخذ العرض الكامل */
+    div[data-testid="stMarkdownContainer"], 
+    div[data-testid="stAlert"] {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    
+    /* توسيط النص داخل مربع "You said" */
+    div[data-testid="stAlert"] p {
+        text-align: center !important;
+        font-size: 16px !important;
+    }
+
+    /* توسيط النص الطويل للرد وجعله أوضح */
+    div[data-testid="stMarkdownContainer"] p {
+        text-align: center !important;
+        font-size: 18px !important;
+        line-height: 1.6 !important;
     }
 
     @keyframes pulse {
@@ -193,11 +220,10 @@ def clean_text_for_tts(text):
 async def generate_tts(text, lang):
     clean_text = clean_text_for_tts(text)
     
-    # --- هنا تم تغيير الصوت إلى رجولي ---
     if lang == "ar":
-        voice = "ar-AE-HamdanNeural" # صوت رجولي إماراتي
+        voice = "ar-AE-HamdanNeural" 
     else:
-        voice = "en-US-GuyNeural"    # صوت رجولي إنجليزي
+        voice = "en-US-GuyNeural"    
         
     output_file = "response_audio.mp3"
     communicate = edge_tts.Communicate(clean_text, voice, volume="+100%", rate="+5%")
