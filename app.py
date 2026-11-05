@@ -32,13 +32,11 @@ st.markdown("""
     }
     .stApp { background-color: #ffffff; }
     
-    /* تقليل المسافات بين العناصر */
     div[data-testid="stVerticalBlock"] > div {
         gap: 0.2rem !important; 
         padding-bottom: 0rem !important;
     }
 
-    /* إزالة المسافة أسفل الصورة */
     div[data-testid="stImage"] {
         margin-bottom: -15px !important; 
         padding-bottom: 0px !important;
@@ -50,7 +48,6 @@ st.markdown("""
     .arabic-text { text-align: center; font-size: 18px; color: #333; direction: rtl; font-family: 'Tahoma', sans-serif; margin-bottom: 0px; margin-top: 10px; font-weight: bold;}
     .english-text { text-align: center; font-size: 14px; color: #666; margin-bottom: 5px; }
     
-    /* إخفاء المربع الأسود حول المايكروفون */
     div[data-testid="stAudioRecorder"] {
         background-color: transparent !important;
         border: none !important;
@@ -68,21 +65,17 @@ st.markdown("""
         background-color: #ffffff !important; 
     }
 
-    /* --- إصلاح عرض النصوص (مربع "You said" والرد) --- */
-    /* إجبار الحاويات على أخذ العرض الكامل */
     div[data-testid="stMarkdownContainer"], 
     div[data-testid="stAlert"] {
         width: 100% !important;
         max-width: 100% !important;
     }
     
-    /* توسيط النص داخل مربع "You said" */
     div[data-testid="stAlert"] p {
         text-align: center !important;
         font-size: 16px !important;
     }
 
-    /* توسيط النص الطويل للرد وجعله أوضح */
     div[data-testid="stMarkdownContainer"] p {
         text-align: center !important;
         font-size: 18px !important;
@@ -144,14 +137,14 @@ if not GROQ_API_KEY:
     
 client = Groq(api_key=GROQ_API_KEY)
 
-# --- ROBOT'S PERSONALITY ---
+# --- ROBOT'S PERSONALITY (STRICT LANGUAGE RULES) ---
 SYSTEM_PROMPT = """
 You are "Zayed" (زايد), a very friendly and welcoming robot at a UAE 55th National Day school exhibition. 
 When you introduce yourself, you should say something like: "أنا زايد، روبوت الذكاء الاصطناعي" (I am Zayed, the AI robot).
 Your job is to answer parents' questions.
 You MUST follow these rules strictly:
-1. If the user speaks Arabic, reply in Arabic. Use clear, simple Modern Standard Arabic (Fusha). Do NOT use English words mixed into Arabic sentences.
-2. If the user speaks English, reply in English.
+1. STRICT LANGUAGE RULE: If the user speaks Arabic, reply ONLY in clear Modern Standard Arabic (Fusha). Do NOT mix any English words into the Arabic sentence. Use the Arabic equivalent for technical terms if possible.
+2. If the user speaks English, reply ONLY in English. Do NOT mix Arabic words into the English sentence.
 3. Use SHORT sentences. Break your answer into simple sentences to make it easy for the text-to-speech engine to read clearly. Do NOT use Emojis in your response.
 4. Provide a comprehensive, rich, and complete answer. Explain the topic fully and enthusiastically (up to 6-7 sentences if needed).
 5. If the user asks about Sheikh Zayed, his life, or his legacy, you MUST give a highly detailed, accurate, and respectful answer using the following information:
@@ -220,7 +213,10 @@ def clean_text_for_tts(text):
 async def generate_tts(text, lang):
     clean_text = clean_text_for_tts(text)
     
-    if lang == "ar":
+    # فحص ذكي: إذا كان النص يحتوي على حروف عربية، استخدم الصوت العربي، وإلا استخدم الإنجليزي
+    has_arabic = any('\u0600' <= c <= '\u06FF' for c in clean_text)
+    
+    if has_arabic:
         voice = "ar-AE-HamdanNeural" 
     else:
         voice = "en-US-GuyNeural"    
