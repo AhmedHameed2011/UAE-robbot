@@ -117,7 +117,7 @@ if not GROQ_API_KEY:
     
 client = Groq(api_key=GROQ_API_KEY)
 
-# --- ROBOT'S PERSONALITY (UPDATED FOR CLEAR ARABIC) ---
+# --- ROBOT'S PERSONALITY ---
 SYSTEM_PROMPT = """
 You are "Zayed" (زايد), a very friendly and welcoming robot at a UAE 55th National Day school exhibition. 
 When you introduce yourself, you should say something like: "أنا زايد، روبوت الذكاء الاصطناعي" (I am Zayed, the AI robot).
@@ -186,23 +186,20 @@ def get_ai_response_stream(user_text):
         if chunk.choices[0].delta.content:
             yield chunk.choices[0].delta.content
 
-# دالة جديدة لتنظيف النص قبل النطق (لإزالة الرموز التعبيرية)
 def clean_text_for_tts(text):
-    # إزالة الرموز التعبيرية والأحرف غير المرغوبة
     text = re.sub(r'[^\w\s\.\,\!\?\-\:\;]', '', text)
     return text
 
 async def generate_tts(text, lang):
-    # تنظيف النص من الرموز التعبيرية
     clean_text = clean_text_for_tts(text)
     
+    # --- هنا تم تغيير الصوت إلى رجولي ---
     if lang == "ar":
-        voice = "ar-AE-FatimaNeural" # تغيير الصوت إلى أنثوي (Fatima) لنطق أوضح
+        voice = "ar-AE-HamdanNeural" # صوت رجولي إماراتي
     else:
-        voice = "en-US-AriaNeural"   # تغيير الصوت إلى أنثوي (Aria)
+        voice = "en-US-GuyNeural"    # صوت رجولي إنجليزي
         
     output_file = "response_audio.mp3"
-    # تقليل السرعة قليلاً ليكون النطق أوضح
     communicate = edge_tts.Communicate(clean_text, voice, volume="+100%", rate="+5%")
     await communicate.save(output_file)
     return output_file
