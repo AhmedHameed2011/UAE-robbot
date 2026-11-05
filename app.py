@@ -19,7 +19,7 @@ except Exception:
     GROQ_API_KEY = os.getenv("GROQ_API")
 
 # --- UI SETUP ---
-st.set_page_config(page_title="Zayed Robot", page_icon="🇦🇪🤖", layout="centered")
+st.set_page_config(page_title="Zayed Robot", page_icon="🇦🇪🤖", layout="wide")
 
 # --- CUSTOM CSS ---
 st.markdown("""
@@ -27,13 +27,13 @@ st.markdown("""
     .block-container {
         padding-top: 1rem !important;
         padding-bottom: 0rem !important;
-        padding-left: 1rem !important;
-        padding-right: 1rem !important;
+        max-width: 900px !important; 
     }
+    
     .stApp { background-color: #ffffff; }
     
     div[data-testid="stVerticalBlock"] > div {
-        gap: 0.2rem !important; 
+        gap: 0.5rem !important; 
         padding-bottom: 0rem !important;
     }
 
@@ -43,10 +43,11 @@ st.markdown("""
         line-height: 0 !important;
     }
 
-    h1 { color: #00732f !important; text-align: center; font-family: 'Arial', sans-serif; font-weight: bold; margin-top: 5px !important; margin-bottom: 0px !important; font-size: 22px !important;}
-    h2 { text-align: center; color: #333 !important; margin-bottom: 15px !important; margin-top: 0px !important; font-size: 16px !important;}
-    .arabic-text { text-align: center; font-size: 18px; color: #333; direction: rtl; font-family: 'Tahoma', sans-serif; margin-bottom: 0px; margin-top: 10px; font-weight: bold;}
-    .english-text { text-align: center; font-size: 14px; color: #666; margin-bottom: 5px; }
+    h1 { color: #00732f !important; text-align: center; font-family: 'Arial', sans-serif; font-weight: bold; margin-top: 5px !important; margin-bottom: 0px !important; font-size: 24px !important;}
+    h2 { text-align: center; color: #333 !important; margin-bottom: 15px !important; margin-top: 0px !important; font-size: 18px !important;}
+    
+    .arabic-text { text-align: center; font-size: 20px; color: #333; direction: rtl; font-family: 'Tahoma', sans-serif; margin-bottom: 0px; margin-top: 10px; font-weight: bold;}
+    .english-text { text-align: center; font-size: 16px; color: #666; margin-bottom: 5px; }
     
     div[data-testid="stAudioRecorder"] {
         background-color: transparent !important;
@@ -57,7 +58,7 @@ st.markdown("""
         background-color: transparent !important;
     }
     div[data-testid="stAudioRecorder"] button {
-        transform: scale(1.8) !important;
+        transform: scale(1.5) !important;
         margin: 0px auto !important;
         display: block !important;
         box-shadow: 0 0 15px rgba(0, 115, 47, 0.4) !important;
@@ -65,7 +66,6 @@ st.markdown("""
         background-color: #ffffff !important; 
     }
 
-    /* إخفاء مشغل الصوت الافتراضي */
     div[data-testid="stAudio"] {
         display: none !important;
     }
@@ -109,39 +109,28 @@ def file_exists(path):
     return os.path.exists(path)
 
 # --- RENDER UI ---
-if file_exists("intro.gif"):
-    st.image("intro.gif", use_container_width=True)
-else:
-    st.warning("⚠️ لم يتم العثور على صورة الغلاف 'intro.gif'.")
+col_intro1, col_intro2, col_intro3 = st.columns([1, 3, 1])
+with col_intro2:
+    if file_exists("intro.gif"):
+        st.image("intro.gif", use_container_width=True)
+    else:
+        st.warning("⚠️ لم يتم العثور على صورة الغلاف 'intro.gif'.")
 
 st.markdown("<h1>🤖 زايد - صديق اليوم الوطني 55</h1>", unsafe_allow_html=True)
 st.markdown("<h2>Zayed - National Day 55 Buddy</h2>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; font-size: 16px; font-weight: bold; color: #00732f; margin-bottom: 5px; margin-top: 10px;'>📱 Scan to try on your phone</p>", unsafe_allow_html=True)
 
-col_qr1, col_qr2, col_qr3 = st.columns([1, 1, 1])
-with col_qr2:
+col_left, col_right = st.columns([1, 1])
+
+with col_left:
+    st.markdown("<p style='text-align: center; font-size: 16px; font-weight: bold; color: #00732f; margin-bottom: 5px;'>📱 Scan to try on your phone</p>", unsafe_allow_html=True)
     if file_exists("qr_code.png"):
         st.image("qr_code.png", use_container_width=True)
     else:
         st.warning("QR Code image not found.")
-
-# --- ROBOT IMAGE PLACEHOLDER ---
-st.markdown("<p class='arabic-text'>👇 تحدث مع زايد</p>", unsafe_allow_html=True)
-st.markdown("<p class='english-text'>👇 Talk to Zayed</p>", unsafe_allow_html=True)
-
-col_robot1, col_robot2, col_robot3 = st.columns([1, 1.5, 1])
-with col_robot2:
-    robot_placeholder = st.empty()
-    # التحقق من وجود الصورة قبل عرضها
-    if file_exists("robot_idle.png"):
-        robot_placeholder.image("robot_idle.png", use_container_width=True)
-    elif file_exists("robot.png"):
-        robot_placeholder.image("robot.png", use_container_width=True)
-    else:
-        st.warning("⚠️ لم يتم العثور على صورة الروبوت. يرجى رفع 'robot_idle.png' أو 'robot.png'.")
-
-col_mic1, col_mic2, col_mic3 = st.columns([1, 1, 1])
-with col_mic2:
+        
+    st.markdown("<p class='arabic-text'>👇 تحدث مع زايد</p>", unsafe_allow_html=True)
+    st.markdown("<p class='english-text'>👇 Talk to Zayed</p>", unsafe_allow_html=True)
+    
     audio_bytes = audio_recorder(
         text="",
         recording_color="#ff0000",
@@ -151,9 +140,18 @@ with col_mic2:
         key="mic_center"
     )
 
+with col_right:
+    robot_placeholder = st.empty()
+    if file_exists("robot_idle.png"):
+        robot_placeholder.image("robot_idle.png", use_container_width=True)
+    elif file_exists("robot.png"):
+        robot_placeholder.image("robot.png", use_container_width=True)
+    else:
+        st.warning("⚠️ لم يتم العثور على صورة الروبوت.")
+
 # --- INITIALIZE GROQ ---
 if not GROQ_API_KEY:
-    st.error("API Key not found. Please check your Streamlit Secrets or .env file.")
+    st.error("API Key not found.")
     st.stop()
     
 client = Groq(api_key=GROQ_API_KEY)
@@ -164,10 +162,10 @@ You are "Zayed" (زايد), a very friendly and welcoming robot at a UAE 55th Na
 When you introduce yourself, you should say something like: "أنا زايد، روبوت الذكاء الاصطناعي" (I am Zayed, the AI robot).
 Your job is to answer parents' questions.
 You MUST follow these rules strictly:
-1. STRICT LANGUAGE RULE: If the user speaks Arabic, reply ONLY in clear Modern Standard Arabic (Fusha). Do NOT mix any English words into the Arabic sentence. Use the Arabic equivalent for technical terms if possible.
+1. STRICT LANGUAGE RULE: If the user speaks Arabic, reply ONLY in clear Modern Standard Arabic (Fusha). Do NOT mix any English words into the Arabic sentence.
 2. If the user speaks English, reply ONLY in English. Do NOT mix Arabic words into the English sentence.
-3. Use SHORT sentences. Break your answer into simple sentences to make it easy for the text-to-speech engine to read clearly. Do NOT use Emojis in your response.
-4. Provide a comprehensive, rich, and complete answer. Explain the topic fully and enthusiastically (up to 6-7 sentences if needed).
+3. Use SHORT sentences. Do NOT use Emojis in your response.
+4. Provide a comprehensive, rich, and complete answer (up to 6-7 sentences).
 5. If the user asks about Sheikh Zayed, his life, or his legacy, you MUST give a highly detailed, accurate, and respectful answer using the following information:
    - الشيخ زايد بن سلطان آل نهيان هو القائد المؤسس وأول رئيس لدولة الإمارات العربية المتحدة.
    - ولد في أبوظبي عام 1918، ونشأ في مدينة العين.
@@ -175,21 +173,17 @@ You MUST follow these rules strictly:
    - في عام 1966، أصبح حاكماً لإمارة أبوظبي وبدأ مسيرة التحديث.
    - في عام 1971، قاد جهود توحيد الإمارات وأعلن قيام الاتحاد في الثاني من ديسمبر.
    - توفي في الثاني من نوفمبر عام 2004، تاركاً إرثاً وطنياً وإنسانياً عظيماً.
-6. Remember these facts about the exhibition:
-   - Your name is Zayed, named in his honor.
+6. Remember these facts:
+   - Your name is Zayed.
    - The school hosting this exhibition is "مدرسة الظاهر للشراكات التعليمية" (Al Dhaher charter school).
    - The UAE 55th National Day is on December 2nd, 2026.
-   - This exhibition showcases student projects in Artificial Intelligence.
-   - You are built using Python and AI by a brilliant student from this school.
 """
 
 # --- HELPER FUNCTIONS ---
-
 def transcribe_audio_groq(audio_bytes):
     temp_file = "temp_audio.wav"
     with open(temp_file, "wb") as f:
         f.write(audio_bytes)
-    
     try:
         with open(temp_file, "rb") as file:
             transcription = client.audio.transcriptions.create(
@@ -200,12 +194,10 @@ def transcribe_audio_groq(audio_bytes):
             )
         text = transcription.strip() if isinstance(transcription, str) else transcription.text.strip()
     except Exception as e:
-        print(f"Groq transcription error: {e}")
         text = None
     finally:
         if os.path.exists(temp_file):
             os.remove(temp_file)
-    
     if text:
         lang = "ar" if any('\u0600' <= c <= '\u06FF' for c in text) else "en"
     else:
@@ -228,19 +220,12 @@ def get_ai_response_stream(user_text):
             yield chunk.choices[0].delta.content
 
 def clean_text_for_tts(text):
-    text = re.sub(r'[^\w\s\.\,\!\?\-\:\;]', '', text)
-    return text
+    return re.sub(r'[^\w\s\.\,\!\?\-\:\;]', '', text)
 
 async def generate_tts(text, lang):
     clean_text = clean_text_for_tts(text)
-    
     has_arabic = any('\u0600' <= c <= '\u06FF' for c in clean_text)
-    
-    if has_arabic:
-        voice = "ar-AE-HamdanNeural" 
-    else:
-        voice = "en-US-GuyNeural"    
-        
+    voice = "ar-AE-HamdanNeural" if has_arabic else "en-US-GuyNeural"    
     output_file = "response_audio.mp3"
     communicate = edge_tts.Communicate(clean_text, voice, volume="+100%", rate="+5%")
     await communicate.save(output_file)
@@ -248,32 +233,30 @@ async def generate_tts(text, lang):
 
 # --- RESPONSE LOGIC ---
 if audio_bytes:
-    listen_placeholder = st.empty()
+    status_placeholder = st.empty()
     user_text_placeholder = st.empty()
     ai_text_placeholder = st.empty()
     audio_placeholder = st.empty()
-    status_placeholder = st.empty()
 
-    # عرض الصورة المتحركة إذا وجدت
+    # التغيير إلى صورة التحدث (GIF)
     if file_exists("robot_talking.gif"):
         robot_placeholder.image("robot_talking.gif", use_container_width=True)
+    elif file_exists("Robot_Talking.gif"): # احتياطاً إذا كان الاسم بحرف كبير
+        robot_placeholder.image("Robot_Talking.gif", use_container_width=True)
         
-    listen_placeholder.markdown("<div class='thinking-animation'>🎤 زايد يستمع... / Zayed is listening...</div>", unsafe_allow_html=True)
+    status_placeholder.markdown("<div class='thinking-animation'>🎤 زايد يستمع... / Zayed is listening...</div>", unsafe_allow_html=True)
     user_text, detected_lang = transcribe_audio_groq(audio_bytes)
-    listen_placeholder.empty() 
+    status_placeholder.empty() 
     
     if user_text:
         user_text_placeholder.success(f"**You said / قلت:** {user_text}")
         
         status_placeholder.markdown("<div class='thinking-animation'>🧠 زايد يفكر... / Zayed is thinking...</div>", unsafe_allow_html=True)
-        
         with ai_text_placeholder.container():
             response_text = st.write_stream(get_ai_response_stream(user_text))
-            
         status_placeholder.empty() 
         
         status_placeholder.markdown("<div class='thinking-animation'>🔊 زايد يتحدث... / Zayed is speaking...</div>", unsafe_allow_html=True)
-        
         audio_file = asyncio.run(generate_tts(response_text, detected_lang))
         
         try:
@@ -287,32 +270,28 @@ if audio_bytes:
         
         os.remove(audio_file)
         status_placeholder.empty()
-        
         time.sleep(audio_length + 3.5) 
         
+        # تنظيف الشاشة
         user_text_placeholder.empty()
         ai_text_placeholder.empty()
         audio_placeholder.empty()
         status_placeholder.empty()
         
-        # إعادة الصورة الثابتة
+        # العودة إلى الصورة الثابتة
         if file_exists("robot_idle.png"):
             robot_placeholder.image("robot_idle.png", use_container_width=True)
-        elif file_exists("robot.png"):
-            robot_placeholder.image("robot.png", use_container_width=True)
             
         if "mic_center" in st.session_state:
             del st.session_state["mic_center"]
             
     else:
-        listen_placeholder.empty()
-        st.error("عذراً، لم أفهم كلامك. يرجى المحاولة مرة أخرى.\n\nSorry, I couldn't understand. Please try again.")
+        status_placeholder.empty()
+        st.error("عذراً، لم أفهم كلامك. يرجى المحاولة مرة أخرى.\n\nSorry, I couldn't understand.")
         time.sleep(3) 
         
         if file_exists("robot_idle.png"):
             robot_placeholder.image("robot_idle.png", use_container_width=True)
-        elif file_exists("robot.png"):
-            robot_placeholder.image("robot.png", use_container_width=True)
             
         if "mic_center" in st.session_state:
             del st.session_state["mic_center"]
