@@ -23,26 +23,25 @@ st.set_page_config(page_title="Zayed Robot", page_icon="🇦🇪🤖", layout="c
 # --- CUSTOM CSS ---
 st.markdown("""
     <style>
-    /* 1. إزالة الهوامش العلوية والسفلية للصفحة بالكامل */
+    /* 1. تعديل الهوامش العلوية لإنزال الصورة قليلاً للأسفل */
     .block-container {
-        padding-top: 0rem !important;
+        padding-top: 2rem !important; /* زيادة المسافة العلوية */
         padding-bottom: 0rem !important;
         padding-left: 1rem !important;
         padding-right: 1rem !important;
-        margin-top: -3rem !important; 
     }
     
     .stApp { background-color: #ffffff; }
     
     /* 2. تصفير المسافات بين العناصر */
     div[data-testid="stVerticalBlock"] > div {
-        gap: 0rem !important; 
+        gap: 0.2rem !important; 
         padding-bottom: 0rem !important;
     }
 
     /* 3. إزالة المسافة أسفل الصورة */
     div[data-testid="stImage"] {
-        margin-bottom: -20px !important; 
+        margin-bottom: -15px !important; 
         padding-bottom: 0px !important;
         line-height: 0 !important;
     }
@@ -55,24 +54,29 @@ st.markdown("""
     .arabic-text { text-align: center; font-size: 18px; color: #333; direction: rtl; font-family: 'Tahoma', sans-serif; margin-bottom: 0px; margin-top: 10px; font-weight: bold;}
     .english-text { text-align: center; font-size: 14px; color: #666; margin-bottom: 5px; }
     
-    /* 5. إزالة المربع الأسود حول زر المايكروفون */
+    /* 5. إعدادات زر المايكروفون (تكبير + توسيط) */
     div[data-testid="stAudioRecorder"] {
         background-color: transparent !important;
         border: none !important;
         box-shadow: none !important;
+        display: flex !important;
+        justify-content: center !important; /* توسيط الزر */
+        align-items: center !important;
+        margin-top: 10px !important;
     }
+    
     div[data-testid="stAudioRecorder"] > div {
         background-color: transparent !important;
     }
 
-    /* تكبير زر المايكروفون */
+    /* تكبير الزر أكثر */
     div[data-testid="stAudioRecorder"] button {
-        transform: scale(1.5);
-        margin: 0px auto;
-        display: block;
-        box-shadow: 0 0 15px rgba(0, 115, 47, 0.4);
-        border: 2px solid #00732f;
-        background-color: #ffffff !important; /* جعل خلفية الزر بيضاء */
+        transform: scale(2.0) !important; /* تكبير الزر مرتين */
+        margin: 0px auto !important;
+        display: block !important;
+        box-shadow: 0 0 20px rgba(0, 115, 47, 0.5) !important; /* ظل أخضر أوضح */
+        border: 3px solid #00732f !important;
+        background-color: #ffffff !important; 
     }
 
     /* تأثير الرسوم المتحركة */
