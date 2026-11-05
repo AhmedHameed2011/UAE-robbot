@@ -48,7 +48,6 @@ st.markdown("""
     .arabic-text { text-align: center; font-size: 18px; color: #333; direction: rtl; font-family: 'Tahoma', sans-serif; margin-bottom: 0px; margin-top: 10px; font-weight: bold;}
     .english-text { text-align: center; font-size: 14px; color: #666; margin-bottom: 5px; }
     
-    /* إخفاء المربع الأسود حول المايكروفون */
     div[data-testid="stAudioRecorder"] {
         background-color: transparent !important;
         border: none !important;
@@ -71,7 +70,6 @@ st.markdown("""
         display: none !important;
     }
 
-    /* تنسيق النصوص */
     div[data-testid="stMarkdownContainer"], 
     div[data-testid="stAlert"] {
         width: 100% !important;
@@ -106,10 +104,14 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# --- دالة للتحقق من وجود الملفات ---
+def file_exists(path):
+    return os.path.exists(path)
+
 # --- RENDER UI ---
-try:
+if file_exists("intro.gif"):
     st.image("intro.gif", use_container_width=True)
-except Exception:
+else:
     st.warning("⚠️ لم يتم العثور على صورة الغلاف 'intro.gif'.")
 
 st.markdown("<h1>🤖 زايد - صديق اليوم الوطني 55</h1>", unsafe_allow_html=True)
@@ -118,24 +120,25 @@ st.markdown("<p style='text-align: center; font-size: 16px; font-weight: bold; c
 
 col_qr1, col_qr2, col_qr3 = st.columns([1, 1, 1])
 with col_qr2:
-    try:
+    if file_exists("qr_code.png"):
         st.image("qr_code.png", use_container_width=True)
-    except Exception:
+    else:
         st.warning("QR Code image not found.")
 
 # --- ROBOT IMAGE PLACEHOLDER ---
-# ننشئ حاوية فارغة لعرض صورة الروبوت، ونضعها في المنتصف
 st.markdown("<p class='arabic-text'>👇 تحدث مع زايد</p>", unsafe_allow_html=True)
 st.markdown("<p class='english-text'>👇 Talk to Zayed</p>", unsafe_allow_html=True)
 
 col_robot1, col_robot2, col_robot3 = st.columns([1, 1.5, 1])
 with col_robot2:
     robot_placeholder = st.empty()
-    # عرض الصورة الثابتة في البداية
-    try:
+    # التحقق من وجود الصورة قبل عرضها
+    if file_exists("robot_idle.png"):
         robot_placeholder.image("robot_idle.png", use_container_width=True)
-    except Exception:
-        st.warning("⚠️ لم يتم العثور على صورة الروبوت 'robot_idle.png'.")
+    elif file_exists("robot.png"):
+        robot_placeholder.image("robot.png", use_container_width=True)
+    else:
+        st.warning("⚠️ لم يتم العثور على صورة الروبوت. يرجى رفع 'robot_idle.png' أو 'robot.png'.")
 
 col_mic1, col_mic2, col_mic3 = st.columns([1, 1, 1])
 with col_mic2:
@@ -150,7 +153,7 @@ with col_mic2:
 
 # --- INITIALIZE GROQ ---
 if not GROQ_API_KEY:
-    st.error("API Key not found.")
+    st.error("API Key not found. Please check your Streamlit Secrets or .env file.")
     st.stop()
     
 client = Groq(api_key=GROQ_API_KEY)
@@ -251,11 +254,9 @@ if audio_bytes:
     audio_placeholder = st.empty()
     status_placeholder = st.empty()
 
-    # 1. حالة الاستماع (نغير الصورة إلى المتحركة)
-    try:
+    # عرض الصورة المتحركة إذا وجدت
+    if file_exists("robot_talking.gif"):
         robot_placeholder.image("robot_talking.gif", use_container_width=True)
-    except Exception:
-        pass # إذا لم توجد الصورة المتحركة، يبقى الثابت
         
     listen_placeholder.markdown("<div class='thinking-animation'>🎤 زايد يستمع... / Zayed is listening...</div>", unsafe_allow_html=True)
     user_text, detected_lang = transcribe_audio_groq(audio_bytes)
@@ -264,7 +265,6 @@ if audio_bytes:
     if user_text:
         user_text_placeholder.success(f"**You said / قلت:** {user_text}")
         
-        # 2. حالة التفكير
         status_placeholder.markdown("<div class='thinking-animation'>🧠 زايد يفكر... / Zayed is thinking...</div>", unsafe_allow_html=True)
         
         with ai_text_placeholder.container():
@@ -272,7 +272,6 @@ if audio_bytes:
             
         status_placeholder.empty() 
         
-        # 3. حالة التحدث (تبقى الصورة المتحركة)
         status_placeholder.markdown("<div class='thinking-animation'>🔊 زايد يتحدث... / Zayed is speaking...</div>", unsafe_allow_html=True)
         
         audio_file = asyncio.run(generate_tts(response_text, detected_lang))
@@ -282,7 +281,6 @@ if audio_bytes:
         except Exception:
             audio_length = 5 
             
-        # تشغيل الصوت (تم إخفاؤه بواسطة CSS)
         with audio_placeholder.container():
             with open(audio_file, "rb") as f:
                 st.audio(f.read(), format="audio/mp3", autoplay=True)
@@ -292,16 +290,16 @@ if audio_bytes:
         
         time.sleep(audio_length + 3.5) 
         
-        # 4. تنظيف الشاشة وإعادة الصورة الثابتة
         user_text_placeholder.empty()
         ai_text_placeholder.empty()
         audio_placeholder.empty()
         status_placeholder.empty()
         
-        try:
+        # إعادة الصورة الثابتة
+        if file_exists("robot_idle.png"):
             robot_placeholder.image("robot_idle.png", use_container_width=True)
-        except Exception:
-            pass
+        elif file_exists("robot.png"):
+            robot_placeholder.image("robot.png", use_container_width=True)
             
         if "mic_center" in st.session_state:
             del st.session_state["mic_center"]
@@ -311,11 +309,10 @@ if audio_bytes:
         st.error("عذراً، لم أفهم كلامك. يرجى المحاولة مرة أخرى.\n\nSorry, I couldn't understand. Please try again.")
         time.sleep(3) 
         
-        # إعادة الصورة الثابتة في حالة الخطأ
-        try:
+        if file_exists("robot_idle.png"):
             robot_placeholder.image("robot_idle.png", use_container_width=True)
-        except Exception:
-            pass
+        elif file_exists("robot.png"):
+            robot_placeholder.image("robot.png", use_container_width=True)
             
         if "mic_center" in st.session_state:
             del st.session_state["mic_center"]
