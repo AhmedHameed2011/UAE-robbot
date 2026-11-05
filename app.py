@@ -23,9 +23,9 @@ st.set_page_config(page_title="Zayed Robot", page_icon="🇦🇪🤖", layout="c
 # --- CUSTOM CSS ---
 st.markdown("""
     <style>
-    /* 1. تعديل الهوامش العلوية لإنزال الصورة قليلاً للأسفل */
+    /* 1. تعديل الهوامش العلوية */
     .block-container {
-        padding-top: 2rem !important; /* زيادة المسافة العلوية */
+        padding-top: 1rem !important;
         padding-bottom: 0rem !important;
         padding-left: 1rem !important;
         padding-right: 1rem !important;
@@ -54,28 +54,21 @@ st.markdown("""
     .arabic-text { text-align: center; font-size: 18px; color: #333; direction: rtl; font-family: 'Tahoma', sans-serif; margin-bottom: 0px; margin-top: 10px; font-weight: bold;}
     .english-text { text-align: center; font-size: 14px; color: #666; margin-bottom: 5px; }
     
-    /* 5. إعدادات زر المايكروفون (تكبير + توسيط) */
+    /* 5. تكبير الزر وإخفاء المربع الأسود */
     div[data-testid="stAudioRecorder"] {
         background-color: transparent !important;
         border: none !important;
         box-shadow: none !important;
-        display: flex !important;
-        justify-content: center !important; /* توسيط الزر */
-        align-items: center !important;
-        margin-top: 10px !important;
     }
-    
     div[data-testid="stAudioRecorder"] > div {
         background-color: transparent !important;
     }
-
-    /* تكبير الزر أكثر */
     div[data-testid="stAudioRecorder"] button {
-        transform: scale(2.0) !important; /* تكبير الزر مرتين */
+        transform: scale(1.8) !important;
         margin: 0px auto !important;
         display: block !important;
-        box-shadow: 0 0 20px rgba(0, 115, 47, 0.5) !important; /* ظل أخضر أوضح */
-        border: 3px solid #00732f !important;
+        box-shadow: 0 0 15px rgba(0, 115, 47, 0.4) !important;
+        border: 2px solid #00732f !important;
         background-color: #ffffff !important; 
     }
 
@@ -128,6 +121,7 @@ with col_mic2:
         neutral_color="#00732f",
         icon_name="microphone",
         icon_size="2x",
+        key="mic_center"
     )
 
 # --- INITIALIZE GROQ ---
@@ -210,12 +204,14 @@ async def generate_tts(text, lang):
 
 # --- RESPONSE LOGIC ---
 if audio_bytes:
+    # إنشاء حاويات مؤقتة للرسائل
     listen_placeholder = st.empty()
     user_text_placeholder = st.empty()
     ai_text_placeholder = st.empty()
     audio_placeholder = st.empty()
     status_placeholder = st.empty()
 
+    # 1. حالة الاستماع
     listen_placeholder.markdown("<div class='thinking-animation'>🎤 زايد يستمع... / Zayed is listening...</div>", unsafe_allow_html=True)
     user_text, detected_lang = transcribe_audio_groq(audio_bytes)
     listen_placeholder.empty() 
@@ -223,6 +219,7 @@ if audio_bytes:
     if user_text:
         user_text_placeholder.success(f"**You said / قلت:** {user_text}")
         
+        # 2. حالة التفكير
         status_placeholder.markdown("<div class='thinking-animation'>🧠 زايد يفكر... / Zayed is thinking...</div>", unsafe_allow_html=True)
         
         with ai_text_placeholder.container():
@@ -230,6 +227,7 @@ if audio_bytes:
             
         status_placeholder.empty() 
         
+        # 3. حالة التحدث
         status_placeholder.markdown("<div class='thinking-animation'>🔊 زايد يتحدث... / Zayed is speaking...</div>", unsafe_allow_html=True)
         
         audio_file = asyncio.run(generate_tts(response_text, detected_lang))
@@ -246,8 +244,10 @@ if audio_bytes:
         os.remove(audio_file)
         status_placeholder.empty()
         
+        # الانتظار حتى ينتهي الصوت
         time.sleep(audio_length + 1.5) 
         
+        # تنظيف الشاشة
         user_text_placeholder.empty()
         ai_text_placeholder.empty()
         audio_placeholder.empty()
@@ -257,9 +257,18 @@ if audio_bytes:
             del st.session_state["audio_recorder"]
             
     else:
-        listen_placeholder.empty()
-        user_text_placeholder.error("Sorry, I couldn't understand. Please try again.")
-        time.sleep(2)
-        user_text_placeholder.empty()
+        # --- هنا حل مشكلة اختفاء رسالة الخطأ ---
+        listen_placeholder.empty() # مسح رسالة الاستماع
+        
+        # عرض رسالة الخطأ في مكان ثابت (بدون استخدام placeholder)
+        st.error("عذراً، لم أفهم كلامك. يرجى المحاولة مرة أخرى والتحدث بوضوح.\n\nSorry, I couldn't understand. Please try again and speak clearly.")
+        
+        # إبقاء الرسالة ظاهرة لمدة 3 ثوانٍ
+        time.sleep(3) 
+        
+        # مسح الصوت من الذاكرة
         if "audio_recorder" in st.session_state:
             del st.session_state["audio_recorder"]
+            
+        # إعادة تشغيل الصفحة لمسح الرسالة والعودة للواجهة الأصلية
+        st.rerun()
