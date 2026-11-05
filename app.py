@@ -5,10 +5,11 @@ import os
 import time
 from groq import Groq
 from dotenv import load_dotenv
-from audio_recorder_streamlit import audio_recorder
 from mutagen.mp3 import MP3
 
-# Load local .env file
+# إزالة استيراد المكتبة القديمة
+# from audio_recorder_streamlit import audio_recorder
+
 load_dotenv()
 
 # --- API KEY SETUP ---
@@ -33,7 +34,7 @@ st.markdown("""
     
     .stApp { background-color: #ffffff; }
     
-    /* 2. تصفير المسافات بين العناصر */
+    /* 2. تصفير المسافات */
     div[data-testid="stVerticalBlock"] > div {
         gap: 0.2rem !important; 
         padding-bottom: 0rem !important;
@@ -53,23 +54,32 @@ st.markdown("""
     /* النصوص */
     .arabic-text { text-align: center; font-size: 18px; color: #333; direction: rtl; font-family: 'Tahoma', sans-serif; margin-bottom: 0px; margin-top: 10px; font-weight: bold;}
     .english-text { text-align: center; font-size: 14px; color: #666; margin-bottom: 5px; }
+
+    /* 5. تنسيق زر المايكروفون المدمج st.audio_input */
+    /* توسيط الزر وتكبيره */
+    div[data-testid="stAudioInput"] {
+        display: flex;
+        justify-content: center;
+        margin-top: 10px;
+    }
     
-    /* 5. تكبير الزر وإخفاء المربع الأسود */
-    div[data-testid="stAudioRecorder"] {
-        background-color: transparent !important;
+    /* تكبير زر التسجيل داخل st.audio_input */
+    div[data-testid="stAudioInput"] button {
+        transform: scale(1.5); /* تكبير الزر */
+        background-color: #00732f !important; /* لون أخضر إماراتي */
+        color: white !important;
+        border-radius: 50px !important;
+        padding: 15px 30px !important;
         border: none !important;
-        box-shadow: none !important;
+        box-shadow: 0 4px 15px rgba(0, 115, 47, 0.5) !important;
     }
-    div[data-testid="stAudioRecorder"] > div {
-        background-color: transparent !important;
-    }
-    div[data-testid="stAudioRecorder"] button {
-        transform: scale(1.8) !important;
-        margin: 0px auto !important;
-        display: block !important;
-        box-shadow: 0 0 15px rgba(0, 115, 47, 0.4) !important;
-        border: 2px solid #00732f !important;
-        background-color: #ffffff !important; 
+    
+    /* تغيير النص داخل الزر ليكون واضحاً */
+    div[data-testid="stAudioInput"] button::before {
+        content: "🎤 اضغط للتحدث | Tap to Speak";
+        font-size: 18px;
+        font-weight: bold;
+        margin-right: 10px;
     }
 
     /* تأثير الرسوم المتحركة */
@@ -96,7 +106,7 @@ st.markdown("""
 try:
     st.image("intro.gif", use_container_width=True)
 except Exception:
-    st.warning("⚠️ لم يتم العثور على صورة الغلاف 'intro.gif'. يرجى التأكد من رفعها.")
+    st.warning("⚠️ لم يتم العثور على صورة الغلاف 'intro.gif'.")
 
 st.markdown("<h1>🤖 زايد - صديق اليوم الوطني 55</h1>", unsafe_allow_html=True)
 st.markdown("<h2>Zayed - National Day 55 Buddy</h2>", unsafe_allow_html=True)
@@ -113,20 +123,16 @@ with col_qr2:
 st.markdown("<p class='arabic-text'>👇 تحدث مع زايد</p>", unsafe_allow_html=True)
 st.markdown("<p class='english-text'>👇 Talk to Zayed</p>", unsafe_allow_html=True)
 
+# --- MICROPHONE (Using native Streamlit widget) ---
+# نستخدم الأعمدة لتوسيط الزر
 col_mic1, col_mic2, col_mic3 = st.columns([1, 1, 1])
 with col_mic2:
-    audio_bytes = audio_recorder(
-        text="",
-        recording_color="#ff0000",
-        neutral_color="#00732f",
-        icon_name="microphone",
-        icon_size="2x",
-        key="mic_center"
-    )
+    # استخدمنا st.audio_input بدلاً من audio_recorder
+    audio_value = st.audio_input(" ", label_visibility="collapsed")
 
 # --- INITIALIZE GROQ ---
 if not GROQ_API_KEY:
-    st.error("API Key not found. Please check your Streamlit Secrets or .env file.")
+    st.error("API Key not found.")
     st.stop()
     
 client = Groq(api_key=GROQ_API_KEY)
@@ -150,7 +156,10 @@ You MUST follow these rules strictly:
 
 # --- HELPER FUNCTIONS ---
 
-def transcribe_audio_groq(audio_bytes):
+def transcribe_audio_groq(audio_value):
+    # st.audio_input يعيد كائن يشبه الملف، لذا نقرأه مباشرة
+    audio_bytes = audio_value.read()
+    
     temp_file = "temp_audio.wav"
     with open(temp_file, "wb") as f:
         f.write(audio_bytes)
@@ -203,23 +212,20 @@ async def generate_tts(text, lang):
     return output_file
 
 # --- RESPONSE LOGIC ---
-if audio_bytes:
-    # إنشاء حاويات مؤقتة للرسائل
+if audio_value:
     listen_placeholder = st.empty()
     user_text_placeholder = st.empty()
     ai_text_placeholder = st.empty()
     audio_placeholder = st.empty()
     status_placeholder = st.empty()
 
-    # 1. حالة الاستماع
     listen_placeholder.markdown("<div class='thinking-animation'>🎤 زايد يستمع... / Zayed is listening...</div>", unsafe_allow_html=True)
-    user_text, detected_lang = transcribe_audio_groq(audio_bytes)
+    user_text, detected_lang = transcribe_audio_groq(audio_value)
     listen_placeholder.empty() 
     
     if user_text:
         user_text_placeholder.success(f"**You said / قلت:** {user_text}")
         
-        # 2. حالة التفكير
         status_placeholder.markdown("<div class='thinking-animation'>🧠 زايد يفكر... / Zayed is thinking...</div>", unsafe_allow_html=True)
         
         with ai_text_placeholder.container():
@@ -227,7 +233,6 @@ if audio_bytes:
             
         status_placeholder.empty() 
         
-        # 3. حالة التحدث
         status_placeholder.markdown("<div class='thinking-animation'>🔊 زايد يتحدث... / Zayed is speaking...</div>", unsafe_allow_html=True)
         
         audio_file = asyncio.run(generate_tts(response_text, detected_lang))
@@ -244,31 +249,18 @@ if audio_bytes:
         os.remove(audio_file)
         status_placeholder.empty()
         
-        # الانتظار حتى ينتهي الصوت
         time.sleep(audio_length + 1.5) 
         
-        # تنظيف الشاشة
         user_text_placeholder.empty()
         ai_text_placeholder.empty()
         audio_placeholder.empty()
         status_placeholder.empty()
         
-        if "audio_recorder" in st.session_state:
-            del st.session_state["audio_recorder"]
+        # إعادة تشغيل الصفحة لتصفير واجهة الصوت
+        st.rerun()
             
     else:
-        # --- هنا حل مشكلة اختفاء رسالة الخطأ ---
-        listen_placeholder.empty() # مسح رسالة الاستماع
-        
-        # عرض رسالة الخطأ في مكان ثابت (بدون استخدام placeholder)
-        st.error("عذراً، لم أفهم كلامك. يرجى المحاولة مرة أخرى والتحدث بوضوح.\n\nSorry, I couldn't understand. Please try again and speak clearly.")
-        
-        # إبقاء الرسالة ظاهرة لمدة 3 ثوانٍ
+        listen_placeholder.empty()
+        st.error("عذراً، لم أفهم كلامك. يرجى المحاولة مرة أخرى.\n\nSorry, I couldn't understand. Please try again.")
         time.sleep(3) 
-        
-        # مسح الصوت من الذاكرة
-        if "audio_recorder" in st.session_state:
-            del st.session_state["audio_recorder"]
-            
-        # إعادة تشغيل الصفحة لمسح الرسالة والعودة للواجهة الأصلية
         st.rerun()
