@@ -47,7 +47,6 @@ st.markdown("""
     .arabic-text { text-align: center; font-size: 20px; color: #333; direction: rtl; font-family: 'Tahoma', sans-serif; margin-bottom: 0px; margin-top: 10px; font-weight: bold;}
     .english-text { text-align: center; font-size: 16px; color: #666; margin-bottom: 5px; }
 
-    /* تنسيق زر st.audio_input */
     div[data-testid="stAudioInput"] {
         display: flex;
         justify-content: center;
@@ -122,10 +121,9 @@ with col_left:
     if file_exists("qr_code.png"):
         st.image("qr_code.png", use_container_width=True)
         
-    st.markdown("<p class='arabic-text'>👇 تحدث مع زايد</p>", unsafe_allow_html=True)
-    st.markdown("<p class='english-text'>👇 Talk to Zayed</p>", unsafe_allow_html=True)
+    st.markdown("<p class='arabic-text'>👇 تحدث مع زايد (تحدث بوضوح لمدة 3 ثوانٍ)</p>", unsafe_allow_html=True)
+    st.markdown("<p class='english-text'>👇 Talk to Zayed (Speak clearly for 3 seconds)</p>", unsafe_allow_html=True)
     
-    # استخدام st.audio_input المدمج
     audio_value = st.audio_input(" ", label_visibility="collapsed")
 
 with col_right:
@@ -160,9 +158,9 @@ def transcribe_audio_groq(audio_value):
         
     audio_bytes = audio_value.read()
     
-    # التحقق من أن الصوت ليس فارغاً (أقل من 5000 بايت يعني أنه فارغ تقريباً)
-    if not audio_bytes or len(audio_bytes) < 5000:
-        print(f"--- AUDIO TOO SMALL: {len(audio_bytes)} bytes ---")
+    # تقليل الحد الأدنى للحجم للسماح بالأصوات القصيرة
+    if not audio_bytes or len(audio_bytes) < 1000:
+        print(f"--- AUDIO TOO SMALL: {len(audio_bytes) if audio_bytes else 0} bytes ---")
         return None, "en"
         
     temp_file = "temp_audio.wav"
@@ -175,10 +173,9 @@ def transcribe_audio_groq(audio_value):
                 file=(temp_file, file.read()),
                 model="whisper-large-v3-turbo",
                 response_format="text",
-                language=None
+                language="ar" # إجبار اللغة العربية لتجنب الفشل
             )
         
-        # طباعة ما تم استلامه من Groq للتشخيص
         text = transcription.strip() if isinstance(transcription, str) else transcription.text.strip()
         print(f"--- GROQ RETURNED TEXT: '{text}' ---")
         
@@ -269,7 +266,6 @@ if audio_value:
         if file_exists("robot_idle.png"):
             robot_placeholder.image("robot_idle.png", use_container_width=True)
             
-        # مسح الصوت من الذاكرة لمنع التكرار
         if "mic_center" in st.session_state:
             del st.session_state["mic_center"]
             
