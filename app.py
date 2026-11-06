@@ -48,6 +48,7 @@ st.markdown("""
     .arabic-text { text-align: center; font-size: 18px; color: #333; direction: rtl; font-family: 'Tahoma', sans-serif; margin-bottom: 0px; margin-top: 10px; font-weight: bold;}
     .english-text { text-align: center; font-size: 14px; color: #666; margin-bottom: 5px; }
     
+    /* إخفاء المربع الأسود حول المايكروفون */
     div[data-testid="stAudioRecorder"] {
         background-color: transparent !important;
         border: none !important;
@@ -65,6 +66,12 @@ st.markdown("""
         background-color: #ffffff !important; 
     }
 
+    /* إخفاء مشغل الصوت الافتراضي */
+    div[data-testid="stAudio"] {
+        display: none !important;
+    }
+
+    /* تنسيق النصوص */
     div[data-testid="stMarkdownContainer"], 
     div[data-testid="stAlert"] {
         width: 100% !important;
@@ -116,8 +123,19 @@ with col_qr2:
     except Exception:
         st.warning("QR Code image not found.")
 
+# --- ROBOT IMAGE PLACEHOLDER ---
+# ننشئ حاوية فارغة لعرض صورة الروبوت، ونضعها في المنتصف
 st.markdown("<p class='arabic-text'>👇 تحدث مع زايد</p>", unsafe_allow_html=True)
 st.markdown("<p class='english-text'>👇 Talk to Zayed</p>", unsafe_allow_html=True)
+
+col_robot1, col_robot2, col_robot3 = st.columns([1, 1.5, 1])
+with col_robot2:
+    robot_placeholder = st.empty()
+    # عرض الصورة الثابتة في البداية
+    try:
+        robot_placeholder.image("robot_idle.png", use_container_width=True)
+    except Exception:
+        st.warning("⚠️ لم يتم العثور على صورة الروبوت 'robot_idle.png'.")
 
 col_mic1, col_mic2, col_mic3 = st.columns([1, 1, 1])
 with col_mic2:
@@ -137,7 +155,7 @@ if not GROQ_API_KEY:
     
 client = Groq(api_key=GROQ_API_KEY)
 
-# --- ROBOT'S PERSONALITY (STRICT LANGUAGE RULES) ---
+# --- ROBOT'S PERSONALITY ---
 SYSTEM_PROMPT = """
 You are "Zayed" (زايد), a very friendly and welcoming robot at a UAE 55th National Day school exhibition. 
 When you introduce yourself, you should say something like: "أنا زايد، روبوت الذكاء الاصطناعي" (I am Zayed, the AI robot).
@@ -213,7 +231,6 @@ def clean_text_for_tts(text):
 async def generate_tts(text, lang):
     clean_text = clean_text_for_tts(text)
     
-    # فحص ذكي: إذا كان النص يحتوي على حروف عربية، استخدم الصوت العربي، وإلا استخدم الإنجليزي
     has_arabic = any('\u0600' <= c <= '\u06FF' for c in clean_text)
     
     if has_arabic:
@@ -234,6 +251,12 @@ if audio_bytes:
     audio_placeholder = st.empty()
     status_placeholder = st.empty()
 
+    # 1. حالة الاستماع (نغير الصورة إلى المتحركة)
+    try:
+        robot_placeholder.image("robot_talking.gif", use_container_width=True)
+    except Exception:
+        pass # إذا لم توجد الصورة المتحركة، يبقى الثابت
+        
     listen_placeholder.markdown("<div class='thinking-animation'>🎤 زايد يستمع... / Zayed is listening...</div>", unsafe_allow_html=True)
     user_text, detected_lang = transcribe_audio_groq(audio_bytes)
     listen_placeholder.empty() 
@@ -241,6 +264,7 @@ if audio_bytes:
     if user_text:
         user_text_placeholder.success(f"**You said / قلت:** {user_text}")
         
+        # 2. حالة التفكير
         status_placeholder.markdown("<div class='thinking-animation'>🧠 زايد يفكر... / Zayed is thinking...</div>", unsafe_allow_html=True)
         
         with ai_text_placeholder.container():
@@ -248,6 +272,7 @@ if audio_bytes:
             
         status_placeholder.empty() 
         
+        # 3. حالة التحدث (تبقى الصورة المتحركة)
         status_placeholder.markdown("<div class='thinking-animation'>🔊 زايد يتحدث... / Zayed is speaking...</div>", unsafe_allow_html=True)
         
         audio_file = asyncio.run(generate_tts(response_text, detected_lang))
@@ -257,6 +282,7 @@ if audio_bytes:
         except Exception:
             audio_length = 5 
             
+        # تشغيل الصوت (تم إخفاؤه بواسطة CSS)
         with audio_placeholder.container():
             with open(audio_file, "rb") as f:
                 st.audio(f.read(), format="audio/mp3", autoplay=True)
@@ -266,11 +292,17 @@ if audio_bytes:
         
         time.sleep(audio_length + 3.5) 
         
+        # 4. تنظيف الشاشة وإعادة الصورة الثابتة
         user_text_placeholder.empty()
         ai_text_placeholder.empty()
         audio_placeholder.empty()
         status_placeholder.empty()
         
+        try:
+            robot_placeholder.image("robot_idle.png", use_container_width=True)
+        except Exception:
+            pass
+            
         if "mic_center" in st.session_state:
             del st.session_state["mic_center"]
             
@@ -279,6 +311,12 @@ if audio_bytes:
         st.error("عذراً، لم أفهم كلامك. يرجى المحاولة مرة أخرى.\n\nSorry, I couldn't understand. Please try again.")
         time.sleep(3) 
         
+        # إعادة الصورة الثابتة في حالة الخطأ
+        try:
+            robot_placeholder.image("robot_idle.png", use_container_width=True)
+        except Exception:
+            pass
+            
         if "mic_center" in st.session_state:
             del st.session_state["mic_center"]
             
