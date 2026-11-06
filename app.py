@@ -47,6 +47,7 @@ st.markdown("""
     .arabic-text { text-align: center; font-size: 20px; color: #333; direction: rtl; font-family: 'Tahoma', sans-serif; margin-bottom: 0px; margin-top: 10px; font-weight: bold;}
     .english-text { text-align: center; font-size: 16px; color: #666; margin-bottom: 5px; }
 
+    /* تنسيق زر st.audio_input */
     div[data-testid="stAudioInput"] {
         display: flex;
         justify-content: center;
@@ -124,6 +125,7 @@ with col_left:
     st.markdown("<p class='arabic-text'>👇 تحدث مع زايد</p>", unsafe_allow_html=True)
     st.markdown("<p class='english-text'>👇 Talk to Zayed</p>", unsafe_allow_html=True)
     
+    # استخدام st.audio_input المدمج
     audio_value = st.audio_input(" ", label_visibility="collapsed")
 
 with col_right:
@@ -158,8 +160,9 @@ def transcribe_audio_groq(audio_value):
         
     audio_bytes = audio_value.read()
     
-    # تقليل الحد الأدنى للحجم للسماح بالأصوات القصيرة
-    if not audio_bytes or len(audio_bytes) < 1000:
+    # التحقق من أن الصوت ليس فارغاً (أقل من 5000 بايت يعني أنه فارغ تقريباً)
+    if not audio_bytes or len(audio_bytes) < 5000:
+        print(f"--- AUDIO TOO SMALL: {len(audio_bytes)} bytes ---")
         return None, "en"
         
     temp_file = "temp_audio.wav"
@@ -174,7 +177,11 @@ def transcribe_audio_groq(audio_value):
                 response_format="text",
                 language=None
             )
+        
+        # طباعة ما تم استلامه من Groq للتشخيص
         text = transcription.strip() if isinstance(transcription, str) else transcription.text.strip()
+        print(f"--- GROQ RETURNED TEXT: '{text}' ---")
+        
     except Exception as e:
         print(f"--- GROQ TRANSCRIPTION ERROR: {e} ---")
         text = None
@@ -195,7 +202,7 @@ def get_ai_response_stream(user_text):
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_text}
         ],
-        model="llama-3.1-8b-instant",  # تم التصحيح: استخدام نموذج Groq المدعوم
+        model="openai/gpt-oss-20b", 
         temperature=0.7,
         max_tokens=1000, 
         stream=True,
@@ -241,11 +248,10 @@ if audio_value:
         status_placeholder.markdown("<div class='thinking-animation'>🔊 زايد يتحدث... / Zayed is speaking...</div>", unsafe_allow_html=True)
         audio_file = asyncio.run(generate_tts(response_text, detected_lang))
         
-        # حساب مدة الصوت الفعلية باستخدام mutagen (لضمان عدم الانتظار طويلاً)
         try:
             audio_length = MP3(audio_file).info.length
         except Exception:
-            audio_length = 3  # قيمة افتراضية معقولة
+            audio_length = 3 
             
         with audio_placeholder.container():
             with open(audio_file, "rb") as f:
@@ -253,9 +259,7 @@ if audio_value:
         
         os.remove(audio_file)
         status_placeholder.empty()
-        
-        # وقت الانتظار: مدة الصوت + ثانية واحدة فقط
-        time.sleep(audio_length + 1.0) 
+        time.sleep(audio_length + 1.5) 
         
         user_text_placeholder.empty()
         ai_text_placeholder.empty()
@@ -266,20 +270,20 @@ if audio_value:
             robot_placeholder.image("robot_idle.png", use_container_width=True)
             
         # مسح الصوت من الذاكرة لمنع التكرار
-        if "audio_recorder" in st.session_state:
-            del st.session_state["audio_recorder"]
+        if "mic_center" in st.session_state:
+            del st.session_state["mic_center"]
             
         st.rerun()
             
     else:
         status_placeholder.empty()
-        st.error("عذراً، لم أفهم كلامك أو أن الصوت لم يُسجل بشكل صحيح. يرجى المحاولة مرة أخرى.\n\nSorry, I couldn't understand or the audio was empty. Please try again.")
+        st.error("عذراً، لم أفهم كلامك أو أن الصوت لم يُسجل بشكل صحيح. يرجى المحاولة مرة أخرى والتحدث بوضوح.\n\nSorry, I couldn't understand or the audio was empty. Please try again.")
         time.sleep(3) 
         
         if file_exists("robot_idle.png"):
             robot_placeholder.image("robot_idle.png", use_container_width=True)
             
-        if "audio_recorder" in st.session_state:
-            del st.session_state["audio_recorder"]
+        if "mic_center" in st.session_state:
+            del st.session_state["mic_center"]
             
         st.rerun()
